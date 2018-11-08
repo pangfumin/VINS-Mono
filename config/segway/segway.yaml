@@ -1,9 +1,10 @@
 %YAML:1.0
 
 #common parameters
-imu_topic: "/imu"
-image_topic: "/image"
-output_path: "/config/apr/vins_result.csv"         # vins outputs will be wrttento vins_folder_path + output_path
+imu_topic: "/imu0"
+image_topic: "/cam0/image_raw"
+output_path: "/home/tony-ws1/output/"
+
 
 #camera calibration
 model_type: FOV

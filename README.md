@@ -2,7 +2,8 @@
 ## A Robust and Versatile Monocular Visual-Inertial State Estimator
 
 **08 Dec 2018**:Test VINS-Mono on Segway_DRIVE datasets(https://github.com/segwayrobotics/segway_DRIVE_benchmark).
-See below for more details.
+See 3.1.4 for more details.
+![image](https://github.com/pangfumin/VINS-Mono/blob/master/pic/segway.png)
 
 **29 Dec 2017**: New features: Add map merge, pose graph reuse, online temporal calibration function, and support rolling shutter camera. Map reuse videos: 
 

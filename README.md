@@ -1,5 +1,9 @@
 # VINS-Mono
 ## A Robust and Versatile Monocular Visual-Inertial State Estimator
+
+**08 Dec 2018**:Test VINS-Mono on Segway_DRIVE datasets(https://github.com/segwayrobotics/segway_DRIVE_benchmark).
+See below for more details.
+
 **29 Dec 2017**: New features: Add map merge, pose graph reuse, online temporal calibration function, and support rolling shutter camera. Map reuse videos: 
 
 <a href="https://www.youtube.com/embed/WDpH80nfZes" target="_blank"><img src="http://img.youtube.com/vi/WDpH80nfZes/0.jpg" 
@@ -94,6 +98,12 @@ Download [EuRoC MAV Dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=km
 ```
 **No extrinsic parameters** in that config file.  Waiting a few seconds for initial calibration. Sometimes you cannot feel any difference as the calibration is done quickly.
 
+3.1.4 Run on Segway_DRIVE datasets.
+```
+    roslaunch vins_estimator segway.launch 
+    roslaunch vins_estimator vins_rviz.launch
+    rosbag play YOUR_PATH_TO_SEGWAY_DATASET/sample.bag 
+```
 **3.2 map merge**
 
 After playing MH_01 bag, you can continue playing MH_02 bag, MH_03 bag ... The system will merge them according to the loop closure.

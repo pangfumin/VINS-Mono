@@ -45,6 +45,7 @@ add_executable(Calibration
     src/camera_models/CataCamera.cc
     src/camera_models/EquidistantCamera.cc
     src/camera_models/ScaramuzzaCamera.cc
+    src/camera_models/FovCamera.cc
     src/sparse_graph/Transform.cc
     src/gpl/gpl.cc
     src/gpl/EigenQuaternionParameterization.cc)
@@ -59,6 +60,7 @@ add_library(camera_model
     src/camera_models/CataCamera.cc
     src/camera_models/EquidistantCamera.cc
     src/camera_models/ScaramuzzaCamera.cc
+    src/camera_models/FovCamera.cc
     src/sparse_graph/Transform.cc
     src/gpl/gpl.cc
     src/gpl/EigenQuaternionParameterization.cc)

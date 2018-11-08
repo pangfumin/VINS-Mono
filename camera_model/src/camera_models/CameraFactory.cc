@@ -7,6 +7,7 @@
 #include "camodocal/camera_models/EquidistantCamera.h"
 #include "camodocal/camera_models/PinholeCamera.h"
 #include "camodocal/camera_models/ScaramuzzaCamera.h"
+#include "camodocal/camera_models/FovCamera.h"
 
 #include "ceres/ceres.h"
 
@@ -71,6 +72,19 @@ CameraFactory::generateCamera(Camera::ModelType modelType,
         camera->setParameters(params);
         return camera;
     }
+
+    case Camera::FOV:
+    {
+        FovCameraPtr camera(new FovCamera);
+
+        FovCamera::Parameters params = camera->getParameters();
+        params.cameraName() = cameraName;
+        params.imageWidth() = imageSize.width;
+        params.imageHeight() = imageSize.height;
+        camera->setParameters(params);
+        return camera;
+    }
+
     case Camera::MEI:
     default:
     {
@@ -118,6 +132,10 @@ CameraFactory::generateCameraFromYamlFile(const std::string& filename)
         {
             modelType = Camera::PINHOLE;
         }
+        else if (boost::iequals(sModelType, "fov"))
+        {
+            modelType = Camera::FOV;
+        }
         else
         {
             std::cerr << "# ERROR: Unknown camera model: " << sModelType << std::endl;
@@ -150,6 +168,15 @@ CameraFactory::generateCameraFromYamlFile(const std::string& filename)
         OCAMCameraPtr camera(new OCAMCamera);
 
         OCAMCamera::Parameters params = camera->getParameters();
+        params.readFromYamlFile(filename);
+        camera->setParameters(params);
+        return camera;
+    }
+    case Camera::FOV:
+    {
+        FovCameraPtr camera(new FovCamera);
+
+        FovCamera::Parameters params = camera->getParameters();
         params.readFromYamlFile(filename);
         camera->setParameters(params);
         return camera;

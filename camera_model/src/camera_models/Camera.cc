@@ -22,6 +22,9 @@ Camera::Parameters::Parameters(ModelType modelType)
     case SCARAMUZZA:
         m_nIntrinsics = SCARAMUZZA_CAMERA_NUM_PARAMS;
         break;
+    case FOV:
+        m_nIntrinsics = 5;
+        break;
     case MEI:
     default:
         m_nIntrinsics = 9;
@@ -46,6 +49,9 @@ Camera::Parameters::Parameters(ModelType modelType,
         break;
     case SCARAMUZZA:
         m_nIntrinsics = SCARAMUZZA_CAMERA_NUM_PARAMS;
+        break;
+    case FOV:
+        m_nIntrinsics = 5;
         break;
     case MEI:
     default:

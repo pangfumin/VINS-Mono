@@ -3,6 +3,7 @@
 //
 
 #include "ViSfm.h"
-ViSfm::ViSfm() {
+ViSfm::ViSfm():frame_count_(0)  {
 
 }
+

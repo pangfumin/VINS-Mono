@@ -315,14 +315,14 @@ void process()
                 xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
                 image[feature_id].emplace_back(camera_id,  xyz_uv_velocity);
 
-                featureOneFrame.push_back(Feature{feature_id, Eigen::Vector2d(p_u, p_v)});
+//                featureOneFrame.push_back(Feature{feature_id, Eigen::Vector2d(p_u, p_v)});
             }
             estimator.processImage(image, img_msg->header);
             if (estimator.solver_flag == 1) {
 //                std::cout << "featureOneFrame: " << featureOneFrame.size() << std::endl;
                 viSfm.addImuFactor(estimator.getLatestImuFactor());
                 viSfm.addState(estimator.getLatestViState());
-                viSfm.addFrame(featureOneFrame);
+                viSfm.addFrame(image);
 
             }
 

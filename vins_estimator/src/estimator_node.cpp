@@ -318,11 +318,17 @@ void process()
 //                featureOneFrame.push_back(Feature{feature_id, Eigen::Vector2d(p_u, p_v)});
             }
             estimator.processImage(image, img_msg->header);
-            if (estimator.solver_flag == 1) {
-//                std::cout << "featureOneFrame: " << featureOneFrame.size() << std::endl;
+//            std::cout << "featureOneFrame: " << int(estimator.solver_flag) << " " << int(estimator.marginalization_flag) << std::endl;
+            if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR
+                && estimator.marginalization_flag == Estimator::MarginalizationFlag::MARGIN_OLD) {
+//                std::cout << "featureOneFrame: " << img_msg->header.stamp.toNSec() << " " << estimator.getLatestTimestamp().toNSec() << std::endl;
                 viSfm.addImuFactor(estimator.getLatestImuFactor());
                 viSfm.addState(estimator.getLatestViState());
                 viSfm.addFrame(image);
+
+//                std::cout << "featureOneFrame: " << img_msg->header.stamp.toNSec()
+//                        << " " << estimator.getLatestViState().t_.transpose() << std::endl;
+                ROS_ASSERT(img_msg->header.stamp.toNSec() == estimator.getLatestTimestamp().toNSec());
 
             }
 

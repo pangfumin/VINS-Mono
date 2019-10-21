@@ -128,6 +128,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
     ROS_DEBUG("this frame is--------------------%s", marginalization_flag ? "reject" : "accept");
     ROS_DEBUG("%s", marginalization_flag ? "Non-keyframe" : "Keyframe");
+//    std::cout << "featureOneFrame: " << (marginalization_flag ? "Non-keyframe" : "Keyframe") << std::endl;
     ROS_DEBUG("Solving %d", frame_count);
     ROS_DEBUG("number of feature: %d", f_manager.getFeatureCount());
     Headers[frame_count] = header;
@@ -677,17 +678,21 @@ ViState Estimator::getLatestViState() {
 //    Vector3d Bas[(WINDOW_SIZE + 1)];
 //    Vector3d Bgs[(WINDOW_SIZE + 1)];
     ViState viState;
-    viState.t_ =  Ps[WINDOW_SIZE];
-    viState.v_ =  Vs[WINDOW_SIZE];
-    viState.q_ =  Eigen::Quaterniond(Rs[WINDOW_SIZE]);
-    viState.ba_ =  Bas[WINDOW_SIZE];
-    viState.bg_ =  Bgs[WINDOW_SIZE];
+    viState.t_ =  Ps[WINDOW_SIZE-1];
+    viState.v_ =  Vs[WINDOW_SIZE-1];
+    viState.q_ =  Eigen::Quaterniond(Rs[WINDOW_SIZE-1]);
+    viState.ba_ =  Bas[WINDOW_SIZE-1];
+    viState.bg_ =  Bgs[WINDOW_SIZE-1];
 
     return viState;
 }
 
 IntegrationBase Estimator::getLatestImuFactor() {
-    return *pre_integrations[WINDOW_SIZE];
+    return *pre_integrations[WINDOW_SIZE-1];
+}
+
+ros::Time Estimator::getLatestTimestamp() {
+    return Headers[WINDOW_SIZE-1].stamp;
 }
 void Estimator::optimization()
 {

@@ -53,6 +53,7 @@ class Estimator
 
     ViState getLatestViState();
     IntegrationBase getLatestImuFactor();
+    ros::Time getLatestTimestamp();
 
 
     enum SolverFlag

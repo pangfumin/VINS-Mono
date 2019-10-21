@@ -337,6 +337,24 @@ void process()
         m_buf.unlock();
     }
 }
+void command()
+{
+
+    while(1)
+    {
+        char c = getchar();
+        if (c == 'b')
+        {
+            std::cout<< " bundle adjustment ..." << std::endl;
+
+
+        }
+
+
+        std::chrono::milliseconds dura(5);
+        std::this_thread::sleep_for(dura);
+    }
+}
 
 int main(int argc, char **argv)
 {
@@ -358,6 +376,9 @@ int main(int argc, char **argv)
     ros::Subscriber sub_relo_points = n.subscribe("/pose_graph/match_points", 2000, relocalization_callback);
 
     std::thread measurement_process{process};
+
+    std::thread keyboard_command_process;
+    keyboard_command_process = std::thread(command);
     ros::spin();
 
     return 0;

@@ -544,7 +544,7 @@ int main(int argc, char **argv)
     std::thread keyboard_command_process;
 
     measurement_process = std::thread(process);
-    keyboard_command_process = std::thread(command);
+    //keyboard_command_process = std::thread(command);
 
 
     ros::spin();

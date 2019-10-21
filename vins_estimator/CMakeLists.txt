@@ -48,6 +48,7 @@ add_executable(vins_estimator
     src/initial/initial_aligment.cpp
     src/initial/initial_sfm.cpp
     src/initial/initial_ex_rotation.cpp
+    src/vi_sfm/ViSfm.cpp
     )
 
 

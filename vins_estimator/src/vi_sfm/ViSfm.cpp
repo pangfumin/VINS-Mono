@@ -3,3 +3,6 @@
 //
 
 #include "ViSfm.h"
+ViSfm::ViSfm() {
+
+}

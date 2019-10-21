@@ -8,6 +8,23 @@
 #include <cassert>
 #include <cstring>
 #include <eigen3/Eigen/Dense>
+#include <vector>
+
+struct ViState {
+    Eigen::Vector3d t_;
+    Eigen::Quaterniond q_;
+    Eigen::Vector3d v_;
+    Eigen::Vector3d ba_;
+    Eigen::Vector3d bg_;
+};
+
+struct Feature {
+    int id_;
+    Eigen::Vector2d uv_;
+};
+
+typedef std::vector<Feature> FeatureOneFrame;
+
 
 class Utility
 {

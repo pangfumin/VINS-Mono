@@ -11,9 +11,12 @@
 #include "estimator.h"
 #include "parameters.h"
 #include "utility/visualization.h"
+#include "vi_sfm/ViSfm.h"
 
 
 Estimator estimator;
+ViSfm viSfm;
+
 
 std::condition_variable con;
 double current_time = -1;
@@ -317,6 +320,10 @@ void process()
             estimator.processImage(image, img_msg->header);
             if (estimator.solver_flag == 1) {
 //                std::cout << "featureOneFrame: " << featureOneFrame.size() << std::endl;
+                viSfm.addImuFactor(estimator.getLatestImuFactor());
+                viSfm.addState(estimator.getLatestViState());
+                viSfm.addFrame(featureOneFrame);
+
             }
 
             double whole_t = t_s.toc();
@@ -345,7 +352,6 @@ void process()
 }
 void command()
 {
-
     while(1)
     {
         char c = getchar();
@@ -353,9 +359,11 @@ void command()
         {
             std::cout<< " bundle adjustment ..." << std::endl;
 
-
+            std::cout << "viSfm: " << viSfm.states_.size()
+                        << " " << viSfm.imuFactors_.size()
+                        << " " << viSfm.frames_.size() << std::endl;
+            break;
         }
-
 
         std::chrono::milliseconds dura(5);
         std::this_thread::sleep_for(dura);

@@ -294,6 +294,7 @@ void process()
 
             TicToc t_s;
             map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> image;
+            FeatureOneFrame featureOneFrame;
             for (unsigned int i = 0; i < img_msg->points.size(); i++)
             {
                 int v = img_msg->channels[0].values[i] + 0.5;
@@ -310,8 +311,13 @@ void process()
                 Eigen::Matrix<double, 7, 1> xyz_uv_velocity;
                 xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
                 image[feature_id].emplace_back(camera_id,  xyz_uv_velocity);
+
+                featureOneFrame.push_back(Feature{feature_id, Eigen::Vector2d(p_u, p_v)});
             }
             estimator.processImage(image, img_msg->header);
+            if (estimator.solver_flag == 1) {
+//                std::cout << "featureOneFrame: " << featureOneFrame.size() << std::endl;
+            }
 
             double whole_t = t_s.toc();
             printStatistics(estimator, whole_t);

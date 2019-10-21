@@ -12,3 +12,10 @@ A3_rs.launch
 test/
 test.launch
 .vscode/
+../camera_model/.idea/
+../camera_model/cmake-build-debug/
+../pose_graph/.idea/
+../pose_graph/cmake-build-debug/
+.idea/
+cmake-build-debug/
+

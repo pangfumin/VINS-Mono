@@ -22,6 +22,20 @@
 #include <queue>
 #include <opencv2/core/eigen.hpp>
 
+struct ViState {
+    Eigen::Vector3d t_;
+    Eigen::Quaterniond q_;
+    Eigen::Vector3d v_;
+    Eigen::Vector3d ba_;
+    Eigen::Vector3d bg_;
+};
+
+struct Feature {
+    int id_;
+    Eigen::Vector2d uv_;
+};
+
+typedef std::vector<Feature> FeatureOneFrame;
 
 class Estimator
 {
@@ -48,6 +62,11 @@ class Estimator
     void vector2double();
     void double2vector();
     bool failureDetection();
+
+    // interface to VI BA
+
+    ViState getLatestViState();
+    IntegrationBase getLatestImuFactor();
 
 
     enum SolverFlag

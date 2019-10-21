@@ -135,6 +135,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     ImageFrame imageframe(image, header.stamp.toSec());
     imageframe.pre_integration = tmp_pre_integration;
     all_image_frame.insert(make_pair(header.stamp.toSec(), imageframe));
+
+//    std::cout << "TEST: " <<
     tmp_pre_integration = new IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
 
     if(ESTIMATE_EXTRINSIC == 2)
@@ -215,6 +217,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         last_P0 = Ps[0];
     }
 }
+
+
 bool Estimator::initialStructure()
 {
     TicToc t_sfm;
@@ -666,7 +670,25 @@ bool Estimator::failureDetection()
     return false;
 }
 
+ViState Estimator::getLatestViState() {
+//    Vector3d Ps[(WINDOW_SIZE + 1)];
+//    Vector3d Vs[(WINDOW_SIZE + 1)];
+//    Matrix3d Rs[(WINDOW_SIZE + 1)];
+//    Vector3d Bas[(WINDOW_SIZE + 1)];
+//    Vector3d Bgs[(WINDOW_SIZE + 1)];
+    ViState viState;
+    viState.t_ =  Ps[WINDOW_SIZE];
+    viState.v_ =  Vs[WINDOW_SIZE];
+    viState.q_ =  Eigen::Quaterniond(Rs[WINDOW_SIZE]);
+    viState.ba_ =  Bas[WINDOW_SIZE];
+    viState.bg_ =  Bgs[WINDOW_SIZE];
 
+    return viState;
+}
+
+IntegrationBase Estimator::getLatestImuFactor() {
+    return *pre_integrations[WINDOW_SIZE];
+}
 void Estimator::optimization()
 {
     ceres::Problem problem;

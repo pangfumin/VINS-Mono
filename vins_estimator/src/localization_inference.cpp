@@ -4,7 +4,6 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include "camodocal/camera_models/CameraFactory.h"
-#include "camodocal/camera_models/CataCamera.h"
 #include "camodocal/camera_models/EquidistantCamera.h"
 
 std::vector< std::vector< cv::DMatch > > simple_match(

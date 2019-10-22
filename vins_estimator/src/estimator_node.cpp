@@ -368,6 +368,8 @@ void command()
             std::cout << "viSfm: " << viSfm.states_.size()
                         << " " << viSfm.imuFactors_.size()
                         << " " << viSfm.frames_.size() << std::endl;
+
+            pubHistoryKeyframes(viSfm);
             break;
         }
 

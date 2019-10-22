@@ -49,9 +49,9 @@ int main () {
     std::string result_file = "/home/pang/hfnet.txt";
     std::ofstream ofs(result_file);
     OfflineHfnetDataReader offlineHfnetDataReader(dataset_path);
-    int query_id = 400;
-    int skip_start_id = 700;
-    int skip_end_id = 7950;
+    int query_id = 670;
+    int skip_start_id = 3000;
+    int skip_end_id = 7850;
     auto query_global = offlineHfnetDataReader.getGlobalDescriptor(query_id);
     int image_width =  848;
     int image_height =  800;
@@ -67,10 +67,11 @@ int main () {
             image_width, image_height,
             k2, k3, k4, k5, mu, mv, u0, v0);
 
+    /// find global match
     int best_match_id = 0;
     double best_score = 0.0;
     cv::Mat best_match_image;
-    for (int i = skip_end_id; i < offlineHfnetDataReader.size(); i ++) {
+    for (int i = 0; i < offlineHfnetDataReader.size(); i ++) {
         if (i  > skip_start_id && i < skip_end_id) continue;
 
         auto global = offlineHfnetDataReader.getGlobalDescriptor(i);

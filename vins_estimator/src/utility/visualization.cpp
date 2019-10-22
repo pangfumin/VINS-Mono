@@ -9,6 +9,7 @@ ros::Publisher pub_key_poses;
 ros::Publisher pub_relo_relative_pose;
 ros::Publisher pub_camera_pose;
 ros::Publisher pub_camera_pose_visual;
+ros::Publisher pub_history_keyframes;
 nav_msgs::Path path, relo_path;
 
 ros::Publisher pub_keyframe_pose;
@@ -26,6 +27,7 @@ void registerPub(ros::NodeHandle &n)
     pub_path = n.advertise<nav_msgs::Path>("path", 1000);
     pub_relo_path = n.advertise<nav_msgs::Path>("relocalization_path", 1000);
     pub_odometry = n.advertise<nav_msgs::Odometry>("odometry", 1000);
+    pub_history_keyframes = n.advertise<geometry_msgs::PoseArray>("history_keyframes", 1000);
     pub_point_cloud = n.advertise<sensor_msgs::PointCloud>("point_cloud", 1000);
     pub_margin_cloud = n.advertise<sensor_msgs::PointCloud>("history_cloud", 1000);
     pub_key_poses = n.advertise<visualization_msgs::Marker>("key_poses", 1000);
@@ -419,4 +421,26 @@ void pubRelocalization(const Estimator &estimator)
     odometry.twist.twist.linear.y = estimator.relo_frame_index;
 
     pub_relo_relative_pose.publish(odometry);
+}
+
+void pubHistoryKeyframes(const ViSfm& viSfm) {
+    geometry_msgs::PoseArray poseArray;
+    poseArray.header.stamp = ros::Time::now();
+    poseArray.header.frame_id = "world";
+
+    for (auto state : viSfm.states_) {
+        geometry_msgs::Pose pose;
+        pose.orientation.x = state.q_.x();
+        pose.orientation.y = state.q_.y();
+        pose.orientation.z = state.q_.z();
+        pose.orientation.w = state.q_.w();
+
+        pose.position.x = state.t_.x();
+        pose.position.y = state.t_.y();
+        pose.position.z = state.t_.z();
+
+        poseArray.poses.push_back(pose);
+    }
+    pub_history_keyframes.publish(poseArray);
+
 }

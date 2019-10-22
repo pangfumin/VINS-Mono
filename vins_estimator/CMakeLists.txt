@@ -54,3 +54,10 @@ add_executable(vins_estimator
 
 target_link_libraries(vins_estimator ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES}) 
 
+
+
+add_executable(localization_inference
+        src/localization_inference.cpp
+        src/vi_sfm/OfflineHfnetDataReader.cpp
+        src/vi_sfm/file-system-tools.cc)
+target_link_libraries(localization_inference ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES})

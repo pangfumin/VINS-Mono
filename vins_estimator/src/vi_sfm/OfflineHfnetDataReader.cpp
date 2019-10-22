@@ -98,6 +98,45 @@ std::pair<ros::Time, GlobalDescriptor>  OfflineHfnetDataReader::getGlobalDescrip
 
 }
 
+std::pair<ros::Time,std::vector< LocalDescriptor>>  OfflineHfnetDataReader::getLocalDescriptor(int cnt) {
+    std::string list_file = local_file_names_.at(cnt);
+
+    std::pair<ros::Time,std::vector< LocalDescriptor>> local;
+    std::ifstream ifs(list_file);
+    if (!ifs.is_open()) {
+        std::cerr << "Failed to open kp list file: " << list_file
+                  << std::endl;
+        return local;
+    }
+
+    std::string path, file_name, raw_file_name, ext;
+    utility::splitPathAndFilename(list_file, &path, &file_name);
+    utility::splitFilePathAndExtension(file_name, &raw_file_name, &ext);
+    uint64_t ts = std::stoull(raw_file_name);
+    std::string one_line;
+    local.first = ros::Time(ts / (double)1e6);
+    int i = 0;
+    while (!ifs.eof() && i < 1000) {
+        std::getline(ifs, one_line);
+        std::stringstream stream(one_line);
+
+        LocalDescriptor localDescriptor;
+        for (int j = 0; j < 256; j ++) {
+            double d;
+            stream >> d;
+
+            localDescriptor(j, 0) = d;
+        }
+
+        local.second.push_back(localDescriptor);
+
+        i ++;
+    }
+    ifs.close();
+
+    return local;
+}
+
 std::pair<ros::Time,std::vector< Keypoint>> OfflineHfnetDataReader::getKeypoints(int cnt) {
     std::string list_file = kp_file_names_.at(cnt);
 

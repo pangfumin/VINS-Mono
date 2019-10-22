@@ -74,21 +74,10 @@ std::pair<ros::Time, GlobalDescriptor>  OfflineHfnetDataReader::getGlobalDescrip
     std::string path, file_name, raw_file_name, ext;
     utility::splitPathAndFilename(list_file, &path, &file_name);
     utility::splitFilePathAndExtension(file_name, &raw_file_name, &ext);
-
-
     uint64_t ts = std::stoull(raw_file_name);
-
-    bool first_msg = true;
-    ros::Time last_timestamp = ros::Time(0);
-    ros::Time cur_ts = ros::Time(0);
     std::string one_line;
-    int image_seq = 0;
-
     global.first = ros::Time(ts / (double)1e6);
-
     GlobalDescriptor globalDescriptor;
-
-
     int i = 0;
     while (!ifs.eof() && i < 4096) {
         std::getline(ifs, one_line);
@@ -107,6 +96,38 @@ std::pair<ros::Time, GlobalDescriptor>  OfflineHfnetDataReader::getGlobalDescrip
 
     return global;
 
+}
+
+std::pair<ros::Time,std::vector< Keypoint>> OfflineHfnetDataReader::getKeypoints(int cnt) {
+    std::string list_file = kp_file_names_.at(cnt);
+
+    std::pair<ros::Time,std::vector< Keypoint>> keypoints;
+    std::ifstream ifs(list_file);
+    if (!ifs.is_open()) {
+        std::cerr << "Failed to open kp list file: " << list_file
+                  << std::endl;
+        return keypoints;
+    }
+
+    std::string path, file_name, raw_file_name, ext;
+    utility::splitPathAndFilename(list_file, &path, &file_name);
+    utility::splitFilePathAndExtension(file_name, &raw_file_name, &ext);
+    uint64_t ts = std::stoull(raw_file_name);
+    std::string one_line;
+    keypoints.first = ros::Time(ts / (double)1e6);
+    int i = 0;
+    while (!ifs.eof() && i < 1000) {
+        std::getline(ifs, one_line);
+        std::stringstream stream(one_line);
+        double u, v;
+        stream >> u >> v;
+
+        keypoints.second.push_back(Eigen::Vector2f(u,v));
+        i ++;
+    }
+    ifs.close();
+
+    return keypoints;
 }
 
 

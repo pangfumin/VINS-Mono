@@ -2,7 +2,10 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/features2d.hpp>
-
+#include <opencv2/calib3d/calib3d.hpp>
+#include "camodocal/camera_models/CameraFactory.h"
+#include "camodocal/camera_models/CataCamera.h"
+#include "camodocal/camera_models/EquidistantCamera.h"
 
 std::vector< std::vector< cv::DMatch > > simple_match(
         const std::vector<LocalDescriptor> & des0, const std::vector<cv::KeyPoint>& kps0,
@@ -32,6 +35,14 @@ std::vector< std::vector< cv::DMatch > > simple_match(
     return matches;
 }
 
+void reduceVector(std::vector< std::vector< cv::DMatch > > &v, std::vector<uchar> status)
+{
+    int j = 0;
+    for (int i = 0; i < int(v.size()); i++)
+        if (status[i])
+            v[j++] = v[i];
+    v.resize(j);
+}
 
 int main () {
     std::string dataset_path = "/home/pang/data/dataset/iros2019slam/corridor/corridor-1-1";
@@ -43,7 +54,19 @@ int main () {
     int skip_start_id = 700;
     int skip_end_id = 7950;
     auto query_global = offlineHfnetDataReader.getGlobalDescriptor(query_id);
-
+    int image_width =  848;
+    int image_height =  800;
+    double k2 = -7.3047108016908169e-03;
+    double k3 = 4.3499931693077087e-02;
+    double k4 = -4.1283041238784790e-02;
+    double k5 = 7.6524601317942142e-03;
+    double mu = 2.8498089599609375e+02;
+    double mv = 2.8610238647460938e+02;
+    double u0 = 4.2524438476562500e+02;
+    double v0 = 3.9846759033203125e+02;
+    camodocal::EquidistantCamera equidistantCamera("camera",
+            image_width, image_height,
+            k2, k3, k4, k5, mu, mv, u0, v0);
 
     int best_match_id = 0;
     double best_score = 0.0;
@@ -57,9 +80,9 @@ int main () {
         double similarity = query_global.second.transpose() * global.second;
         std::cout << "getGlobalDescriptor: " <<  similarity << " " <<  i   << std::endl;
 
-        auto kp = offlineHfnetDataReader.getKeypoints(i);
-
-        std::cout << "kp: " << kp.second.size() << std::endl;
+//        auto kp = offlineHfnetDataReader.getKeypoints(i);
+//
+//        std::cout << "kp: " << kp.second.size() << std::endl;
 
         cv::Mat image = offlineHfnetDataReader.getImage(i);
         cv::imshow("image", image);
@@ -114,9 +137,40 @@ int main () {
         kp.pt = p;
         kps1.push_back(kp);
     }
+
+    /// brute force match
     auto matches = simple_match(query_des.second, kps0, best_match_des.second, kps1, 0.7);
     std::cout << "matches: " << matches.size() << std::endl;
 
+    std::vector<cv::Point2f> simple_matched_kps0, simple_matched_kps1;
+
+    for (auto match: matches) {
+        cv::DMatch dMatch = match.front();
+        auto kp0 =  kps0.at(dMatch.queryIdx);
+        auto kp1 =  kps1.at(dMatch.trainIdx);
+        Eigen::Vector2d p0(kp0.pt.x, kp0.pt.y);
+        Eigen::Vector3d P0;
+        equidistantCamera.liftProjective(p0, P0);
+        simple_matched_kps0.push_back(cv::Point2f(P0(0)/P0(2), P0(1)/P0(2)));
+
+        Eigen::Vector2d p1(kp1.pt.x, kp1.pt.y);
+        Eigen::Vector3d P1;
+        equidistantCamera.liftProjective(p1, P1);
+        simple_matched_kps1.push_back(cv::Point2f(P1(0)/P1(2), P1(1)/P1(2)));
+    }
+
+    /// Ransac
+    std::vector<uchar> status;
+    cv::findFundamentalMat(simple_matched_kps0, simple_matched_kps1,
+            cv::FM_RANSAC, 3.0 / mu, 0.99, status);
+
+    int before_match_cnt = matches.size();
+    reduceVector(matches, status);
+
+    int after_match_cnt = matches.size();
+    std::cout << "Ransac: " << before_match_cnt << " " << after_match_cnt << std::endl;
+
+    /// show
     cv::Mat outImage;
     cv::drawMatches(color_query,kps0,color_match,kps1,matches, outImage);
 

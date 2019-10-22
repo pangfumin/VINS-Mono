@@ -15,7 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     cv_bridge
     )
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 3.3.0 REQUIRED)
 
 # message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 

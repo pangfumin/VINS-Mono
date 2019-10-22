@@ -7,11 +7,19 @@
 #include <ros/time.h>
 OfflineHfnetDataReader::OfflineHfnetDataReader(const std::string& dataset):dataset_path_(dataset),
 cur_cnt_(0) {
+    image_files_folder_ = dataset_path_ + "/fisheye1/";
     kp_files_folder_ = dataset_path_ + "/fisheye1_hfnet_kps/";
     local_des_files_folder_ = dataset_path_ + "/fisheye1_hfnet_local_des/";
     global_des_files_folder_ = dataset_path_ + "/fisheye1_hfnet_global_des/";
 
-    /// external disp
+    if (utility::pathExists(image_files_folder_)) {
+        utility::getAllFilesInFolder(image_files_folder_, &image_file_names_);
+        std::cout<<"disp_list: " << image_file_names_.size() << std::endl;
+        std::sort(image_file_names_.begin(),image_file_names_.end(), [](std::string a, std::string b) {
+            return !utility::compareNumericPartsOfStrings(a,b);
+        });
+    }
+
     if (utility::pathExists(kp_files_folder_)) {
         utility::getAllFilesInFolder(kp_files_folder_, &kp_file_names_);
         std::cout<<"disp_list: " << kp_file_names_.size() << std::endl;
@@ -44,6 +52,11 @@ cur_cnt_(0) {
 
 
 
+}
+
+cv::Mat  OfflineHfnetDataReader::getImage(int cnt) {
+    std::string list_file = image_file_names_.at(cnt);
+    return cv::imread(list_file,CV_LOAD_IMAGE_GRAYSCALE);
 }
 
 
@@ -95,5 +108,6 @@ std::pair<ros::Time, GlobalDescriptor>  OfflineHfnetDataReader::getGlobalDescrip
     return global;
 
 }
+
 
 

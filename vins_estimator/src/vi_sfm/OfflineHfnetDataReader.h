@@ -10,6 +10,8 @@
 #include <iostream>
 #include <Eigen/Core>
 #include <ros/time.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 typedef Eigen::Matrix<double, 4096, 1> GlobalDescriptor;
 typedef Eigen::Matrix<double, 256, 1> LocalDescriptor;
@@ -22,6 +24,7 @@ public:
 
     int size() {return kp_file_names_.size();}
 
+    cv::Mat  getImage(int cnt);
     std::pair<ros::Time, GlobalDescriptor>  getGlobalDescriptor(int cnt);
     std::pair<ros::Time,std::vector< LocalDescriptor>>  getLocalDescriptor(int cnt);
     std::pair<ros::Time,std::vector< Keypoint>> getKeypoints(int cnt);
@@ -29,10 +32,12 @@ private:
     std::string dataset_path_;
     int cur_cnt_;
 
+    std::string image_files_folder_;
     std::string kp_files_folder_;
     std::string local_des_files_folder_;
     std::string global_des_files_folder_;
 
+    std::vector<std::string> image_file_names_;
     std::vector<std::string> kp_file_names_;
     std::vector<std::string> local_file_names_;
     std::vector<std::string> global_file_names_;

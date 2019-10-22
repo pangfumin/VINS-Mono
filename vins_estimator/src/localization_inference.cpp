@@ -21,6 +21,7 @@ std::vector< std::vector< cv::DMatch > > simple_match(
            }
         }
 
+        // check
         if (best > th && abs (kps0.at(i).pt.y - kps1.at(best_id).pt.y) < 50) {
             std::vector< cv::DMatch > match;
             match.push_back(cv::DMatch(i,best_id, 0));

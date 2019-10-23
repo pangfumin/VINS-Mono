@@ -69,6 +69,20 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
         loop_index = detectLoop(cur_kf, cur_kf->index);
 
         int tem = detectLoopHfnet(cur_kf, cur_kf->index);
+
+        std::cout << "detectLoopHfnet: " << tem << std::endl;
+
+        if (tem > 0) {
+            cv::Mat cur_image = cur_kf->image;
+            cv::Mat old_image = getKeyFrame(tem)->image;
+
+            std::vector<std::vector<cv::DMatch>> dMatch;
+            cv::Mat outImage;
+            std::vector<cv::KeyPoint> kps;
+            cv::drawMatches(cur_image, kps, old_image, kps, dMatch, outImage);
+            cv::imshow("drawMatches", outImage);
+            cv::waitKey(2);
+        }
     }
     else
     {

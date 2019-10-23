@@ -471,7 +471,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "pose_graph");
     ros::NodeHandle n("~");
     posegraph.registerPub(n);
-    std::string path = "/home/pang/data/dataset/iros2019slam/office/office-1-1";
+    std::string path = "/home/pang/data/dataset/iros2019slam/office/office-1-5";
     offlineHfnetDataReader = std::make_shared<OfflineHfnetDataReader>(path);
 
     // read param

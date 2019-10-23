@@ -82,6 +82,12 @@ void KeyFrame::computeWindowBRIEFPoint()
 	    window_keypoints.push_back(key);
 	}
 	extractor(image, window_keypoints, window_brief_descriptors);
+
+
+	cv::Mat showImage;
+	cv::drawKeypoints(image, window_keypoints, showImage, cv::Scalar(255,0,0));
+	cv::imshow("computeWindowBRIEFPoint", showImage);
+	cv::waitKey(2);
 }
 
 void KeyFrame::computeBRIEFPoint()

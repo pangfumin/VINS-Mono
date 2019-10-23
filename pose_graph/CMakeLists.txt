@@ -31,6 +31,8 @@ add_executable(pose_graph
     src/pose_graph_node.cpp
     src/pose_graph.cpp
     src/keyframe.cpp
+    src/utility/file-system-tools.cc
+    src/utility/OfflineHfnetDataReader.cpp
     src/utility/CameraPoseVisualization.cpp
     src/ThirdParty/DBoW/BowVector.cpp
     src/ThirdParty/DBoW/FBrief.cpp

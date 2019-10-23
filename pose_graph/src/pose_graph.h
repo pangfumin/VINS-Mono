@@ -77,8 +77,11 @@ private:
 	int earliest_loop_index;
 	int base_sequence;
 
+	// BoW 
 	BriefDatabase db;
 	BriefVocabulary* voc;
+
+
 
 	ros::Publisher pub_pg_path;
 	ros::Publisher pub_base_path;

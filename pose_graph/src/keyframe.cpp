@@ -13,7 +13,10 @@ static void reduceVector(vector<Derived> &v, vector<uchar> status)
 // create keyframe online
 KeyFrame::KeyFrame(double _time_stamp, int _index, Vector3d &_vio_T_w_i, Matrix3d &_vio_R_w_i, cv::Mat &_image,
 		           vector<cv::Point3f> &_point_3d, vector<cv::Point2f> &_point_2d_uv, vector<cv::Point2f> &_point_2d_norm,
-		           vector<double> &_point_id, int _sequence)
+		           vector<double> &_point_id, int _sequence,
+                   std::pair<ros::Time, GlobalDescriptor>   global_des,
+                   std::pair<ros::Time,std::vector< LocalDescriptor>> local_des,
+                   std::pair<ros::Time,std::vector< Keypoint>> kps)
 {
 	time_stamp = _time_stamp;
 	index = _index;
@@ -34,7 +37,59 @@ KeyFrame::KeyFrame(double _time_stamp, int _index, Vector3d &_vio_T_w_i, Matrix3
 	has_fast_point = false;
 	loop_info << 0, 0, 0, 0, 0, 0, 0, 0;
 	sequence = _sequence;
-	computeWindowBRIEFPoint();
+
+	global_des_ = global_des;
+	local_des_ = local_des;
+	kps_ = kps;
+
+    computeWindowBRIEFPoint();
+
+    for(int i = 0; i < (int)point_2d_uv.size(); i++)
+    {
+        cv::KeyPoint key;
+        key.pt = point_2d_uv[i];
+        double min_dist = 10000;
+        int min_dist_id = 0;
+        for(int j = 0 ; j < kps_.second.size() ; j ++) {
+            float dis = abs(kps_.second.at(j).x() - key.pt.x) +
+                    abs(kps_.second.at(j).y() - key.pt.y);
+            if (dis < min_dist) {
+                min_dist = dis;
+                min_dist_id = j;
+            }
+        }
+        point_3d_corresponding_des_.push_back(local_des_.second.at(min_dist_id));
+        auto kp = cv::Point2f(
+                kps_.second.at(min_dist_id)(0),
+                kps_.second.at(min_dist_id)(1));
+        point_3d_corresponding_kp_.push_back(kp);
+
+        std::cout << key.pt.x << " " << key.pt.y << " " << kp.x << " " << kp.y << std::endl;
+
+        point_3d_corresponding_dis_.push_back(min_dist);
+
+    }
+
+//    std::cout << point_2d_uv.size() << " " << point_3d_corresponding_kp_.size() << std::endl;
+
+
+    /// visualization
+    cv::Mat showImage;
+    cv::drawKeypoints(image, window_keypoints, showImage, cv::Scalar(255,0,0));
+//	std::vector<cv::KeyPoint> sp_kps_vec;
+    for (auto p : point_3d_corresponding_kp_) {
+
+//        sp_kps_vec.push_back(kp);
+        cv::circle(showImage, p, 1, cv::Scalar(0,255,0),2);
+    }
+
+    cv::imshow("computeWindowBRIEFPoint", showImage);
+    cv::waitKey(2);
+
+
+
+
+
 	computeBRIEFPoint();
 	if(!DEBUG_IMAGE)
 		image.release();
@@ -82,12 +137,6 @@ void KeyFrame::computeWindowBRIEFPoint()
 	    window_keypoints.push_back(key);
 	}
 	extractor(image, window_keypoints, window_brief_descriptors);
-
-
-	cv::Mat showImage;
-	cv::drawKeypoints(image, window_keypoints, showImage, cv::Scalar(255,0,0));
-	cv::imshow("computeWindowBRIEFPoint", showImage);
-	cv::waitKey(2);
 }
 
 void KeyFrame::computeBRIEFPoint()
@@ -582,6 +631,21 @@ void KeyFrame::updateLoop(Eigen::Matrix<double, 8, 1 > &_loop_info)
 		loop_info = _loop_info;
 	}
 }
+
+cv::flann::Index KeyFrame::buildFlann () {
+    std::vector<cv::Point2f> pointsForSearch; //Insert all 2D points to this vector
+    for (auto p : kps_.second) {
+        pointsForSearch.push_back(cv::Point2f(p(0), p(1)));
+    }
+    cv::flann::KDTreeIndexParams indexParams;
+    cv::flann::Index kdtree(cv::Mat(pointsForSearch).reshape(1),
+            indexParams);
+
+    return kdtree;
+
+}
+
+
 
 BriefExtractor::BriefExtractor(const std::string &pattern_file)
 {

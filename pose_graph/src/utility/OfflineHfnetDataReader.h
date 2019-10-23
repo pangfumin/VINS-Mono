@@ -12,6 +12,7 @@
 #include <ros/time.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "temporal-buffer.h"
 
 typedef Eigen::Matrix<double, 4096, 1> GlobalDescriptor;
 typedef Eigen::Matrix<double, 256, 1> LocalDescriptor;
@@ -28,6 +29,8 @@ public:
     std::pair<ros::Time, GlobalDescriptor>  getGlobalDescriptor(int cnt);
     std::pair<ros::Time,std::vector< LocalDescriptor>>  getLocalDescriptor(int cnt);
     std::pair<ros::Time,std::vector< Keypoint>> getKeypoints(int cnt);
+
+    int getIndexByTs(const uint64_t ts);
 private:
     std::string dataset_path_;
     int cur_cnt_;
@@ -43,6 +46,7 @@ private:
     std::vector<std::string> global_file_names_;
 
 
+    common::TemporalBuffer<int> indexBuffer_;
 
 };
 

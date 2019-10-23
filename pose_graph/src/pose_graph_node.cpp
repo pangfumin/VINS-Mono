@@ -20,6 +20,7 @@
 #include "utility/tic_toc.h"
 #include "pose_graph.h"
 #include "utility/CameraPoseVisualization.h"
+#include "utility/OfflineHfnetDataReader.h"
 #include "parameters.h"
 #define SKIP_FIRST_CNT 10
 using namespace std;
@@ -66,6 +67,7 @@ CameraPoseVisualization cameraposevisual(1, 0, 0, 1);
 Eigen::Vector3d last_t(-100, -100, -100);
 double last_image_time = -1;
 
+std::shared_ptr<OfflineHfnetDataReader> offlineHfnetDataReader;
 void new_sequence()
 {
     printf("new sequence\n");
@@ -411,8 +413,21 @@ void process()
                     //printf("u %f, v %f \n", p_2d_uv.x, p_2d_uv.y);
                 }
 
+
+                int id = offlineHfnetDataReader->getIndexByTs(pose_msg->header.stamp.toNSec());
+                ROS_ASSERT( id != -1);
+
+                std::pair<ros::Time, GlobalDescriptor> global_des =  offlineHfnetDataReader->getGlobalDescriptor(id);
+                std::pair<ros::Time,std::vector< LocalDescriptor>>  local_des = offlineHfnetDataReader->getLocalDescriptor(id);
+                std::pair<ros::Time,std::vector< Keypoint>> kps = offlineHfnetDataReader->getKeypoints(id);
+
+//                std::cout << "LOOPCLOSURE: " << id  << " " << pose_msg->header.stamp.toNSec()
+//                                                    << " " << global_des.first.toNSec() << std::endl;
+
                 KeyFrame* keyframe = new KeyFrame(pose_msg->header.stamp.toSec(), frame_index, T, R, image,
-                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence);   
+                                   point_3d, point_2d_uv, point_2d_normal, point_id, sequence,
+                                                  global_des, local_des, kps);
+
                 m_process.lock();
                 start_flag = 1;
                 posegraph.addKeyFrame(keyframe, 1);
@@ -456,6 +471,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "pose_graph");
     ros::NodeHandle n("~");
     posegraph.registerPub(n);
+    std::string path = "/home/pang/data/dataset/iros2019slam/office/office-1-1";
+    offlineHfnetDataReader = std::make_shared<OfflineHfnetDataReader>(path);
 
     // read param
     n.getParam("visualization_shift_x", VISUALIZATION_SHIFT_X);

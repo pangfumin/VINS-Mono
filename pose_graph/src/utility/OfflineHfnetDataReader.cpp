@@ -50,7 +50,23 @@ cur_cnt_(0) {
     std::cout << "global_file_names_: " << global_file_names_.size() << std::endl;
 
 
+    for (int i = 0; i < kp_file_names_.size(); i ++) {
+        std::string path, file_name, raw_file_name, ext;
+        utility::splitPathAndFilename(kp_file_names_.at(i), &path, &file_name);
+        utility::splitFilePathAndExtension(file_name, &raw_file_name, &ext);
+        uint64_t ts_ns = std::stoull(raw_file_name) * 1000;
 
+        indexBuffer_.addValue(ts_ns, i);
+
+    }
+
+
+}
+
+int OfflineHfnetDataReader::getIndexByTs(const uint64_t ts_ns) {
+    int index = -1;
+    indexBuffer_.getNearestValueToTime(ts_ns, &index);
+    return index;
 
 }
 

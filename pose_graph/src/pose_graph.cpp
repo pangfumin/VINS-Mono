@@ -412,9 +412,11 @@ int PoseGraph::detectLoopHfnet(KeyFrame* keyframe, int frame_index)
     float max_similarity = 0.0;
     int max_similarity_id;
 
+    std::vector<float> similarity_vec;
     for (int i = 0 ; i < keyframelist.size() && i < frame_index - 50 ; i ++ ) {
         GlobalDescriptor  cand = getKeyFrame(i)->global_des_.second;
         float similarity = cur_global_des.transpose() * cand;
+        similarity_vec.push_back(similarity);
 //        std::cout << "similarity: " << similarity << " " << getKeyFrame(i)->index <<  std::endl;
         if (similarity > max_similarity) {
             max_similarity = similarity;
@@ -425,7 +427,24 @@ int PoseGraph::detectLoopHfnet(KeyFrame* keyframe, int frame_index)
     std::cout << "max_similarity_id: " << max_similarity_id
 //              << " " << getKeyFrame(max_similarity_id)->index
               << " " << max_similarity << std::endl;
-    return max_similarity_id;
+    float th = 0.86;
+    if (max_similarity < th) return  -1;
+    if (similarity_vec.size() < 3) return -1;
+    if (max_similarity_id ==0) {
+        if (similarity_vec.at(max_similarity_id + 1) > th) {
+            return max_similarity_id;
+        }
+    } else if (max_similarity_id = similarity_vec.size()-1) {
+        if (similarity_vec.at(max_similarity_id - 1) > th) {
+            return max_similarity_id;
+        }
+    } else {
+        if (similarity_vec.at(max_similarity_id - 1) > th
+        && similarity_vec.at(max_similarity_id + 1) > th) {
+            return max_similarity_id;
+        }
+    }
+    return -1;
 }
 
 

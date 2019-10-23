@@ -67,6 +67,8 @@ void PoseGraph::addKeyFrame(KeyFrame* cur_kf, bool flag_detect_loop)
     {
         TicToc tmp_t;
         loop_index = detectLoop(cur_kf, cur_kf->index);
+
+        int tem = detectLoopHfnet(cur_kf, cur_kf->index);
     }
     else
     {
@@ -384,6 +386,34 @@ int PoseGraph::detectLoop(KeyFrame* keyframe, int frame_index)
         return -1;
 
 }
+
+// simple strategy
+int PoseGraph::detectLoopHfnet(KeyFrame* keyframe, int frame_index)
+{
+    GlobalDescriptor  cur_global_des = keyframe->global_des_.second;
+
+    if (frame_index - 50 < 0)
+        return -1;
+
+    float max_similarity = 0.0;
+    int max_similarity_id;
+
+    for (int i = 0 ; i < keyframelist.size() && i < frame_index - 50 ; i ++ ) {
+        GlobalDescriptor  cand = getKeyFrame(i)->global_des_.second;
+        float similarity = cur_global_des.transpose() * cand;
+//        std::cout << "similarity: " << similarity << " " << getKeyFrame(i)->index <<  std::endl;
+        if (similarity > max_similarity) {
+            max_similarity = similarity;
+            max_similarity_id = i;
+        }
+    }
+
+    std::cout << "max_similarity_id: " << max_similarity_id
+//              << " " << getKeyFrame(max_similarity_id)->index
+              << " " << max_similarity << std::endl;
+    return max_similarity_id;
+}
+
 
 void PoseGraph::addKeyFrameIntoVoc(KeyFrame* keyframe)
 {

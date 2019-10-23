@@ -59,6 +59,14 @@ public:
                           const std::vector<BRIEF::bitset> &descriptors_old,
                           const std::vector<cv::KeyPoint> &keypoints_old,
                           const std::vector<cv::KeyPoint> &keypoints_old_norm);
+
+    void searchByHfnetLocalDes(std::vector<cv::Point2f> &matched_2d_old,
+                                 std::vector<cv::Point2f> &matched_2d_old_norm,
+                                 std::vector<uchar> &status,
+                               const std::vector<LocalDescriptor> &descriptors_old,
+                               const std::vector<cv::Point2f> &keypoints_old,
+                               const std::vector<cv::KeyPoint> &keypoints_old_norm);
+
 	void FundmantalMatrixRANSAC(const std::vector<cv::Point2f> &matched_2d_cur_norm,
                                 const std::vector<cv::Point2f> &matched_2d_old_norm,
                                 vector<uchar> &status);

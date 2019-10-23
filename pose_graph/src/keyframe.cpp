@@ -64,7 +64,7 @@ KeyFrame::KeyFrame(double _time_stamp, int _index, Vector3d &_vio_T_w_i, Matrix3
                 kps_.second.at(min_dist_id)(1));
         point_3d_corresponding_kp_.push_back(kp);
 
-        std::cout << key.pt.x << " " << key.pt.y << " " << kp.x << " " << kp.y << std::endl;
+//        std::cout << key.pt.x << " " << key.pt.y << " " << kp.x << " " << kp.y << std::endl;
 
         point_3d_corresponding_dis_.push_back(min_dist);
 
@@ -221,6 +221,57 @@ void KeyFrame::searchByBRIEFDes(std::vector<cv::Point2f> &matched_2d_old,
           status.push_back(0);
         matched_2d_old.push_back(pt);
         matched_2d_old_norm.push_back(pt_norm);
+    }
+
+}
+
+void KeyFrame::searchByHfnetLocalDes(std::vector<cv::Point2f> &matched_2d_old,
+                                std::vector<cv::Point2f> &matched_2d_old_norm,
+                                std::vector<uchar> &status,
+                                const std::vector<LocalDescriptor> &descriptors_old,
+                                const std::vector<cv::Point2f> &keypoints_old,
+                                const std::vector<cv::KeyPoint> &keypoints_old_norm)
+{
+    for(int i = 0; i < (int)point_3d_corresponding_des_.size(); i++)
+    {
+        cv::Point2f pt = point_3d_corresponding_kp_.at(i);
+        LocalDescriptor des = point_3d_corresponding_des_.at(i);
+
+        float max_similarity = 0;
+        int max_similarity_id = -1;
+        cv::Point2f max_similarity_pt;
+        for (int j = 0; j = descriptors_old.size(); j ++) {
+
+            cv::Point2f old_pt = keypoints_old.at(j);
+            double horizon_dis = abs(old_pt.y - pt.y);
+            if (horizon_dis > 50) continue;
+
+            LocalDescriptor des_old = descriptors_old.at(j);
+
+            float sim = des.transpose() * des_old;
+            if (sim > max_similarity ) {
+                max_similarity  = sim;
+                max_similarity_id = j;
+                max_similarity_pt = old_pt;
+            }
+
+        }
+
+        if (max_similarity > 0.7 ) {
+            status.push_back(1);
+        } else {
+            status.push_back(0);
+        }
+
+        matched_2d_old.push_back(max_similarity_pt);
+
+        Eigen::Vector3d tmp_p;
+        m_camera->liftProjective(Eigen::Vector2d(max_similarity_pt.x, max_similarity_pt.y), tmp_p);
+        cv::KeyPoint tmp_norm;
+        tmp_norm.pt = cv::Point2f(tmp_p.x()/tmp_p.z(), tmp_p.y()/tmp_p.z());
+        keypoints_norm.push_back(tmp_norm);
+
+        matched_2d_old_norm.push_back(tmp_norm.pt);
     }
 
 }

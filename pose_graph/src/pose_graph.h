@@ -59,6 +59,7 @@ public:
 
 private:
 	int detectLoop(KeyFrame* keyframe, int frame_index);
+    int detectLoopHfnet(KeyFrame* keyframe, int frame_index);
 	void addKeyFrameIntoVoc(KeyFrame* keyframe);
 	void optimize4DoF();
 	void updatePath();
@@ -77,7 +78,7 @@ private:
 	int earliest_loop_index;
 	int base_sequence;
 
-	// BoW 
+	// BoW
 	BriefDatabase db;
 	BriefVocabulary* voc;
 

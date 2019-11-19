@@ -65,6 +65,12 @@ estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trus
 #If you choose 0 or 1, you should write down the following matrix.
 #Rotation from camera frame to imu frame, imu^R_cam
 
+# my T_IC
+#[-0.00060187 -0.9999881  -0.00484066  0.00035407]
+#[ 0.9992882  -0.00078402  0.03771584 -0.0216395 ]
+#[-0.03771919 -0.00481451  0.99927678 -0.008865  ]
+#[ 0.          0.          0.          1.        ]
+
 extrinsicRotation: !!opencv-matrix
    rows: 3
    cols: 3

@@ -1,0 +1,93 @@
+%YAML:1.0
+
+#common parameters
+imu_topic: "/imu"
+image_topic: "/mav/cam0"
+output_path: "/home/tony-ws1/output/"
+
+
+#camera calibration
+model_type: FOV
+camera_name: camera
+image_width: 640
+image_height: 360
+distortion_parameters:
+   w : 1.020656
+projection_parameters:
+   fx: 232.1305 
+   fy: 233.1263  
+   cx: 338.3975 
+   cy: 193.1622
+
+
+# Extrinsic parameter between IMU and Camera.
+estimate_extrinsic: 0   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+                        # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
+                        # 2  Don't know anything about extrinsic parameters. You don't need to give R,T. We will try to calibrate it. Do some rotation movement at beginning.
+ex_calib_result_path: "/config/apr/ex_calib_result.yaml"  # If you choose 1 or 2, the extrinsic calibration result will be written vins_folder_path + ex_calib_result_path.
+#If you choose 0 or 1, you should write down the following matrix.
+#Rotation from camera frame to imu frame, imu^R_cam
+
+# For segway scooter, (From CAD)
+# Rz(-90) -> Ry(180) -> Ry(13)
+extrinsicRotation: !!opencv-matrix
+   rows: 3
+   dt: d
+   data: [
+        -0.0000,    1.0000,   -0.0000,
+    0.9744,    0.0000,    0.2250,
+    0.2250,         0,   -0.9744]
+   cols: 3
+#Translation from camera frame to imu frame, imu^T_cam
+extrinsicTranslation: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [0.0046, 0.046, -0.00873]
+
+#feature traker paprameters
+max_cnt: 80            # max feature number in feature tracking
+min_dist: 30            # min distance between two features
+freq: 20                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image
+F_threshold: 1.0        # ransac threshold (pixel)
+show_track: 1           # publish tracking image as topic
+equalize: 1             # if image is too dark or light, trun on equalize to find enough features
+fisheye: 0              # if using fisheye, trun on it. A circle mask will be loaded to remove edge noisy points
+
+#optimization parameters
+max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
+max_num_iterations: 8   # max solver itrations, to guarantee real time
+keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
+
+#imu parameters       The more accurate parameters you provide, the better performance
+#acc_n: 0.2          # accelerometer measurement noise standard deviation. # i.e., accelerometer noise density x sqrt(frequency)
+#gyr_n: 0.05         # gyroscope measurement noise standard deviation.     # i.e., gyro noise density x  sqrt(frequency)
+#acc_w: 0.02         # accelerometer bias random work noise standard deviation.  # i.e., accelerometer bias noise density x sqrt(frequency)
+#gyr_w: 4.0e-5       # gyroscope bias random work noise standard deviation.     # i.e., gyro bias noise density x sqrt(frequency)
+acc_n: 0.104 #0.00147*5*14.14          # accelerometer measurement noise standard deviation. # i.e., accelerometer noise density x sqrt(frequency)
+gyr_n: 0.0173 #0.000244*5*14.14         # gyroscope measurement noise standard deviation.     # i.e., gyro noise density x sqrt(frequency)
+acc_w: 0.0057 #8e-5*5*14.14         # accelerometer bias random work noise standard deviation.  # i.e., accelerometer bias noise density x sqrt(frequency)
+gyr_w: 5e-5 #7e-7*5*14.14       # gyroscope bias random work noise standard deviation.     # i.e., gyro bias noise density x sqrt(frequency)
+g_norm: 9.80122     # gravity magnitude, world average, 9.80665, vins-mono HongKong 9.81007, Beijing 9.80122, c.f. https://wenku.baidu.com/view/eff5868dbe1e650e53ea99c0.html
+
+
+
+#loop closure parameters
+loop_closure: 1                    # start loop closure
+load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
+fast_relocalization: 0             # useful in real-time and large project
+pose_graph_save_path: "/home/tony-ws1/output/pose_graph/" # save and load path
+
+#unsynchronization parameters
+estimate_td: 0                      # online estimate time offset between camera and imu
+td: 0.0                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+
+#rolling shutter parameters
+rolling_shutter: 0                  # 0: global shutter camera, 1: rolling shutter camera
+rolling_shutter_tr: 0               # unit: s. rolling shutter read out time per frame (from data sheet). 
+
+#visualization parameters
+save_image: 1                   # save image in pose graph for visualization prupose; you can close this function by setting 0 
+visualize_imu_forward: 0        # output imu forward propogation to achieve low latency and high frequence results
+visualize_camera_size: 0.4      # size of camera marker in RVIZ
+

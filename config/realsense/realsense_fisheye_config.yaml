@@ -11,10 +11,10 @@ camera_name: camera
 image_width: 640
 image_height: 480
 projection_parameters:
-   k2: 1.7280355035195181e-02
-   k3: -2.5505200860040985e-02
-   k4: 2.2621441637715487e-02
-   k5: -7.3355871719731113e-03
+   k2: -7.3047108016908169e-03
+   k3: 4.3499931693077087e-02
+   k4: -4.1283041238784790e-02
+   k5: 7.6524601317942142e-03
    mu: 2.7723712054408202e+02
    mv: 2.7699784668734617e+02
    u0: 3.3625356873985868e+02
@@ -41,7 +41,7 @@ extrinsicTranslation: !!opencv-matrix
    data: [0.00188568, 0.00123801, 0.01044055]
 
 #feature traker paprameters
-max_cnt: 150            # max feature number in feature tracking
+max_cnt: 120            # max feature number in feature tracking
 min_dist: 30            # min distance between two features 
 freq: 10                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
 F_threshold: 1.0        # ransac threshold (pixel)

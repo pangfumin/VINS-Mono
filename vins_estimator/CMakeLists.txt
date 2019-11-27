@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     cv_bridge
     rosbag
-    camera_model
     )
 
 find_package(OpenCV 3.4 REQUIRED)
@@ -33,6 +32,26 @@ include_directories(
 )
 
 catkin_package()
+
+include_directories("include")
+
+add_library(camera_model
+        src/camera_model/chessboard/Chessboard.cc
+        src/camera_model/calib/CameraCalibration.cc
+        src/camera_model/camera_models/Camera.cc
+        src/camera_model/camera_models/CameraFactory.cc
+        src/camera_model/camera_models/CostFunctionFactory.cc
+        src/camera_model/camera_models/PinholeCamera.cc
+        src/camera_model/camera_models/CataCamera.cc
+        src/camera_model/camera_models/EquidistantCamera.cc
+        src/camera_model/camera_models/ScaramuzzaCamera.cc
+        src/camera_model/camera_models/FovCamera.cc
+        src/camera_model/sparse_graph/Transform.cc
+        src/camera_model/gpl/gpl.cc
+        src/camera_model/gpl/EigenQuaternionParameterization.cc)
+
+target_link_libraries(camera_model ${Boost_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+
 
 add_library(${PROJECT_NAME}
     src/estimator_node.cpp
@@ -55,7 +74,7 @@ add_library(${PROJECT_NAME}
     )
 
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+target_link_libraries(${PROJECT_NAME} camera_model ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
 
 add_executable(vins_estimator_node src/estimator_node.cpp)
@@ -63,10 +82,10 @@ target_link_libraries(vins_estimator_node ${PROJECT_NAME} ${catkin_LIBRARIES}
         ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
 add_executable(feature_tracker_node src/feature_tracker_node.cpp)
-target_link_libraries(feature_tracker_node ${PROJECT_NAME} ${catkin_LIBRARIES}
+target_link_libraries(feature_tracker_node camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
         ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
 
 
 add_executable(data2bag tools/data2bag.cpp )
-target_link_libraries(data2bag ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+target_link_libraries(data2bag camera_model ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)

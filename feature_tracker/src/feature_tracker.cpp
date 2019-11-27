@@ -221,7 +221,7 @@ void FeatureTracker::readIntrinsicParameter(const string &calib_file)
 
 void FeatureTracker::showUndistortion(const string &name)
 {
-    cv::Mat undistortedImg(ROW + 600, COL + 600, CV_8UC1, cv::Scalar(0));
+    cv::Mat undistortedImg(ROW, COL, CV_8UC1, cv::Scalar(0));
     vector<Eigen::Vector2d> distortedp, undistortedp;
     for (int i = 0; i < COL; i++)
         for (int j = 0; j < ROW; j++)
@@ -242,9 +242,9 @@ void FeatureTracker::showUndistortion(const string &name)
         //cout << trackerData[0].K << endl;
         //printf("%lf %lf\n", p.at<float>(1, 0), p.at<float>(0, 0));
         //printf("%lf %lf\n", pp.at<float>(1, 0), pp.at<float>(0, 0));
-        if (pp.at<float>(1, 0) + 300 >= 0 && pp.at<float>(1, 0) + 300 < ROW + 600 && pp.at<float>(0, 0) + 300 >= 0 && pp.at<float>(0, 0) + 300 < COL + 600)
+        if (pp.at<float>(1, 0) >= 0 && pp.at<float>(1, 0) < ROW && pp.at<float>(0, 0) >= 0 && pp.at<float>(0, 0) < COL )
         {
-            undistortedImg.at<uchar>(pp.at<float>(1, 0) + 300, pp.at<float>(0, 0) + 300) = cur_img.at<uchar>(distortedp[i].y(), distortedp[i].x());
+            undistortedImg.at<uchar>(pp.at<float>(1, 0), pp.at<float>(0, 0)) = cur_img.at<uchar>(distortedp[i].y(), distortedp[i].x());
         }
         else
         {
@@ -252,7 +252,7 @@ void FeatureTracker::showUndistortion(const string &name)
         }
     }
     cv::imshow(name, undistortedImg);
-    cv::waitKey(0);
+    cv::waitKey(1);
 }
 
 void FeatureTracker::undistortedPoints()

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
     tf
     cv_bridge
+    rosbag
     )
 
 find_package(OpenCV 3.4 REQUIRED)
@@ -54,3 +55,5 @@ add_executable(vins_estimator
 target_link_libraries(vins_estimator ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread) 
 
 
+add_executable(data2bag tools/data2bag.cpp )
+target_link_libraries(data2bag ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)

@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     cv_bridge
     rosbag
+    camera_model
     )
 
 find_package(OpenCV 3.4 REQUIRED)
@@ -33,7 +34,7 @@ include_directories(
 
 catkin_package()
 
-add_executable(vins_estimator
+add_library(${PROJECT_NAME}
     src/estimator_node.cpp
     src/parameters.cpp
     src/estimator.cpp
@@ -49,10 +50,22 @@ add_executable(vins_estimator
     src/initial/initial_aligment.cpp
     src/initial/initial_sfm.cpp
     src/initial/initial_ex_rotation.cpp
+        src/feature_track/feature_tracker.cpp
+        src/feature_track/parameters.cpp
     )
 
 
-target_link_libraries(vins_estimator ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread) 
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+
+
+add_executable(vins_estimator_node src/estimator_node.cpp)
+target_link_libraries(vins_estimator_node ${PROJECT_NAME} ${catkin_LIBRARIES}
+        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+
+add_executable(feature_tracker_node src/feature_tracker_node.cpp)
+target_link_libraries(feature_tracker_node ${PROJECT_NAME} ${catkin_LIBRARIES}
+        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+
 
 
 add_executable(data2bag tools/data2bag.cpp )

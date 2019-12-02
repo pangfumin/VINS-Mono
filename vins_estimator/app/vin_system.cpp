@@ -11,6 +11,27 @@ std::string colouredString(std::string str, std::string colour, std::string opti
 
 
 VinSystem::VinSystem() {
+    estimator.setParameter();
+    measurement_process = std::thread(&VinSystem::process, this);
+
+    for (int i = 0; i < NUM_OF_CAM; i++)
+        trackerData[i].readIntrinsicParameter(feature_track::CAM_NAMES[i]);
+
+    if(feature_track::FISHEYE)
+    {
+        for (int i = 0; i < NUM_OF_CAM; i++)
+        {
+            trackerData[i].fisheye_mask = cv::imread(feature_track::FISHEYE_MASK, 0);
+            if(!trackerData[i].fisheye_mask.data)
+            {
+                ROS_INFO("load mask fail");
+                ROS_BREAK();
+            }
+            else
+                ROS_INFO("load mask success");
+        }
+    }
+
 
 
 }

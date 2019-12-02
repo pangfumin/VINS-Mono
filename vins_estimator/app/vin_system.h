@@ -47,14 +47,21 @@ std::string colouredString(std::string str, std::string colour, std::string opti
 class VinSystem {
 public:
 
+
     VinSystem();
-    void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg);
+    void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg);
     void img_callback(const sensor_msgs::ImageConstPtr &img_msg);
+
+    ros::Publisher pub_match;
+    ros::Publisher pub_restart;
+
+private:
+    void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg);
+
     void predict(const sensor_msgs::ImuConstPtr &imu_msg);
     void update();
     std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>>
     getMeasurements();
-    void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg);
 
     void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
     void process();
@@ -86,8 +93,7 @@ public:
 #define SHOW_UNDISTORTION 0
 
 
-    ros::Publisher pub_match;
-    ros::Publisher pub_restart;
+
 
     feature_track::FeatureTracker trackerData[feature_track::NUM_OF_CAM];
     double first_image_time;

@@ -5,9 +5,7 @@
 #include <stdio.h>
 #include <queue>
 #include <map>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
+
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
@@ -22,40 +20,19 @@ int main(int argc, char **argv)
     std::string config_file = "/home/pang/catkin_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
     std::string vins_folder_path = "/home/pang/catkin_ws/src/VINS-Mono";
 
+    // read parameters
+    readParameters(config_file);
+    feature_track::readParameters(config_file, vins_folder_path);
+
     VinSystem vinSystem;
 
 
-    readParameters(config_file);
-    vinSystem.estimator.setParameter();
 #ifdef EIGEN_DONT_PARALLELIZE
     ROS_DEBUG("EIGEN_DONT_PARALLELIZE");
 #endif
     ROS_WARN("waiting for image and imu...");
 
     registerPub(n);
-
-    vinSystem.measurement_process = std::thread(&VinSystem::process, &vinSystem);
-    // feature_track
-    feature_track::readParameters(config_file, vins_folder_path);
-
-    for (int i = 0; i < NUM_OF_CAM; i++)
-        vinSystem.trackerData[i].readIntrinsicParameter(feature_track::CAM_NAMES[i]);
-
-    if(feature_track::FISHEYE)
-    {
-        for (int i = 0; i < NUM_OF_CAM; i++)
-        {
-            vinSystem.trackerData[i].fisheye_mask = cv::imread(feature_track::FISHEYE_MASK, 0);
-            if(!vinSystem.trackerData[i].fisheye_mask.data)
-            {
-                ROS_INFO("load mask fail");
-                ROS_BREAK();
-            }
-            else
-                ROS_INFO("load mask success");
-        }
-    }
-
     vinSystem.pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
 
 
@@ -127,7 +104,6 @@ int main(int argc, char **argv)
 
 
     ros::shutdown();
-//    measurement_process.join();
 
     return 0;
 }

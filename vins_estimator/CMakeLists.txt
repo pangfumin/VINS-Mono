@@ -89,3 +89,4 @@ target_link_libraries(feature_tracker_node camera_model ${PROJECT_NAME} ${catkin
 
 add_executable(data2bag tools/data2bag.cpp )
 target_link_libraries(data2bag camera_model ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+

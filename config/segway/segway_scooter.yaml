@@ -73,7 +73,7 @@ g_norm: 9.80122     # gravity magnitude, world average, 9.80665, vins-mono HongK
 
 
 #loop closure parameters
-loop_closure: 1                    # start loop closure
+loop_closure: 0                    # start loop closure
 load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
 fast_relocalization: 0             # useful in real-time and large project
 pose_graph_save_path: "/home/tony-ws1/output/pose_graph/" # save and load path

@@ -32,17 +32,9 @@
 #include "feature_track/feature_tracker.h"
 #include "feature_track/parameters.h"
 
-const string RESET = "\033[0m";
-const string BLACK = "0m";
-const string RED = "1m";
-const string GREEN = "2m";
-const string BOLD = "\033[1;3";
-const string REGULAR = "\033[0;3";
-const string UNDERLINE = "\033[4;3";
-const string BACKGROUND = "\033[4";
 
 
-std::string colouredString(std::string str, std::string colour, std::string option);
+
 
 class VinSystem {
 public:

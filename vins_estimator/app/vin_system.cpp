@@ -4,12 +4,6 @@
 
 #include "vin_system.h"
 
-std::string colouredString(std::string str, std::string colour, std::string option)
-{
-    return option + colour + str + RESET;
-}
-
-
 VinSystem::VinSystem() {
     estimator.setParameter();
     measurement_process = std::thread(&VinSystem::process, this);

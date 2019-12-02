@@ -628,12 +628,12 @@ int main(int argc, char **argv)
             }
 
 
-            cv_bridge::CvImagePtr cv_ptr;
-            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-            cv::Mat image_cv = cv_ptr->image;
-
-            cv::imshow("image", image_cv);
-            cv::waitKey(30);
+//            cv_bridge::CvImagePtr cv_ptr;
+//            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+//            cv::Mat image_cv = cv_ptr->image;
+//
+//            cv::imshow("image", image_cv);
+            cv::waitKey(20);
 
         }
 

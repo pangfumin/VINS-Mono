@@ -1,4 +1,4 @@
-#include "parameters.h"
+#include "vins_estimator/feature_track/parameters.h"
 
 namespace feature_track {
     std::string IMAGE_TOPIC;

@@ -98,7 +98,7 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
 
     cv::Mat show_img = ptr->image;
-    feature_track::TicToc t_r;
+    // feature_track::TicToc t_r;
     for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
     {
         ROS_DEBUG("processing camera %d", i);
@@ -224,7 +224,7 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
             pub_match.publish(ptr->toImageMsg());
         }
     }
-    ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
+    // ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
 }
 
 

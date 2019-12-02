@@ -15,13 +15,13 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include "estimator.h"
-#include "parameters.h"
+#include "vins_estimator/estimator.h"
+#include "vins_estimator/parameters.h"
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <rosbag/chunked_file.h>
 
-#include "utility/visualization.h"
+#include "vins_estimator/utility/visualization.h"
 
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/image_encodings.h>
@@ -29,8 +29,8 @@
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Bool.h>
 
-#include "feature_track/feature_tracker.h"
-#include "feature_track/parameters.h"
+#include "vins_estimator/feature_track/feature_tracker.h"
+#include "vins_estimator/feature_track/parameters.h"
 
 
 

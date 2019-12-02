@@ -85,6 +85,10 @@ add_executable(feature_tracker_node src/feature_tracker_node.cpp)
 target_link_libraries(feature_tracker_node camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
         ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
+add_executable(vins_node src/vins_node.cpp)
+target_link_libraries(vins_node camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
+        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+
 
 
 add_executable(data2bag tools/data2bag.cpp )

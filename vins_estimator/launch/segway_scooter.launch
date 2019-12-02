@@ -2,10 +2,10 @@
     <arg name="config_path" default = "$(find vins_estimator)/../config/segway/segway_scooter.yaml" />
 	  <arg name="vins_path" default = "$(find vins_estimator)/../config/../" />
     
-    <node name="feature_tracker" pkg="vins_estimator" type="feature_tracker_node" output="log">
-        <param name="config_file" type="string" value="$(arg config_path)" />
-        <param name="vins_folder" type="string" value="$(arg vins_path)" />
-    </node>
+<!--    <node name="feature_tracker" pkg="vins_estimator" type="feature_tracker_node" output="log">-->
+<!--        <param name="config_file" type="string" value="$(arg config_path)" />-->
+<!--        <param name="vins_folder" type="string" value="$(arg vins_path)" />-->
+<!--    </node>-->
 
     <node name="vins_estimator" pkg="vins_estimator" type="vins_estimator_node" output="screen">
        <param name="config_file" type="string" value="$(arg config_path)" />

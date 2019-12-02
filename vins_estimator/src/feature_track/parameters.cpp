@@ -31,14 +31,15 @@ namespace feature_track {
         return ans;
     }
 
-    void readParameters(ros::NodeHandle &n) {
-        std::string config_file;
-        config_file = readParam<std::string>(n, "config_file");
+    void readParameters(const std::string config_file, const std::string vins_folder_path) {
+//        std::string config_file;
+//        config_file = readParam<std::string>(n, "config_file");
         cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
         if (!fsSettings.isOpened()) {
             std::cerr << "ERROR: Wrong path to settings" << std::endl;
         }
-        std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
+        std::string VINS_FOLDER_PATH = vins_folder_path;
+//        std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
 
         fsSettings["image_topic"] >> IMAGE_TOPIC;
         fsSettings["imu_topic"] >> IMU_TOPIC;

@@ -1,6 +1,8 @@
 #include "estimator.h"
 
-Estimator::Estimator(): f_manager{Rs}
+Estimator::Estimator(): f_manager{Rs},
+                        last_marginalization_info(NULL),
+                        tmp_pre_integration(NULL)
 {
     ROS_INFO("init begins");
     clearState();

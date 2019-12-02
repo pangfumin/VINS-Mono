@@ -1,77 +1,8 @@
-#include <stdio.h>
-#include <queue>
-#include <map>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/opencv.hpp>
+//
+// Created by pang on 2019/12/2.
+//
 
-#include "estimator.h"
-#include "parameters.h"
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <rosbag/chunked_file.h>
-
-#include "utility/visualization.h"
-
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/PointCloud.h>
-#include <sensor_msgs/Imu.h>
-#include <std_msgs/Bool.h>
-
-#include "feature_track/feature_tracker.h"
-#include "feature_track/parameters.h"
-
-
-Estimator estimator;
-
-std::condition_variable con;
-double current_time = -1;
-queue<sensor_msgs::ImuConstPtr> imu_buf;
-queue<sensor_msgs::PointCloudConstPtr> feature_buf;
-int sum_of_wait = 0;
-
-std::mutex m_buf;
-std::mutex m_state;
-std::mutex m_estimator;
-
-double latest_time;
-Eigen::Vector3d tmp_P;
-Eigen::Quaterniond tmp_Q;
-Eigen::Vector3d tmp_V;
-Eigen::Vector3d tmp_Ba;
-Eigen::Vector3d tmp_Bg;
-Eigen::Vector3d acc_0;
-Eigen::Vector3d gyr_0;
-bool init_feature = 0;
-bool init_imu = 1;
-double last_imu_t = 0;
-
-#define SHOW_UNDISTORTION 0
-
-
-ros::Publisher pub_match;
-ros::Publisher pub_restart;
-
-feature_track::FeatureTracker trackerData[feature_track::NUM_OF_CAM];
-double first_image_time;
-int pub_count = 1;
-bool first_image_flag = true;
-double last_image_time = 0;
-bool init_pub = 0;
-
-
-const string RESET = "\033[0m";
-const string BLACK = "0m";
-const string RED = "1m";
-const string GREEN = "2m";
-const string BOLD = "\033[1;3";
-const string REGULAR = "\033[0;3";
-const string UNDERLINE = "\033[4;3";
-const string BACKGROUND = "\033[4";
+#include "vin_system.h"
 
 std::string colouredString(std::string str, std::string colour, std::string option)
 {
@@ -79,7 +10,13 @@ std::string colouredString(std::string str, std::string colour, std::string opti
 }
 
 
-void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
+VinSystem::VinSystem() {
+
+
+}
+
+
+void VinSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
 {
     if (!init_feature)
     {
@@ -93,7 +30,7 @@ void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
     con.notify_one();
 }
 
-void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
+void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
 {
     if(first_image_flag)
     {
@@ -152,7 +89,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         ROS_DEBUG("processing camera %d", i);
         if (i != 1 || !feature_track::STEREO_TRACK)
             trackerData[i].readImage(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
-                    img_msg->header.stamp.toSec());
+                                     img_msg->header.stamp.toSec());
         else
         {
             if (feature_track::EQUALIZE)
@@ -276,7 +213,7 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
 }
 
 
-void predict(const sensor_msgs::ImuConstPtr &imu_msg)
+void VinSystem::predict(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     double t = imu_msg->header.stamp.toSec();
     if (init_imu)
@@ -314,7 +251,7 @@ void predict(const sensor_msgs::ImuConstPtr &imu_msg)
     gyr_0 = angular_velocity;
 }
 
-void update()
+void VinSystem::update()
 {
     TicToc t_predict;
     latest_time = current_time;
@@ -333,7 +270,7 @@ void update()
 }
 
 std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>>
-getMeasurements()
+VinSystem::getMeasurements()
 {
     std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
 
@@ -372,7 +309,7 @@ getMeasurements()
     return measurements;
 }
 
-void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
+void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
 {
     if (imu_msg->header.stamp.toSec() <= last_imu_t)
     {
@@ -401,7 +338,7 @@ void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
 
 
 
-void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
+void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 {
     if (restart_msg->data == true)
     {
@@ -425,16 +362,16 @@ void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 
 
 // thread: visual-inertial odometry
-void process()
+void VinSystem::process()
 {
     while (ros::ok())
     {
         std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
         std::unique_lock<std::mutex> lk(m_buf);
         con.wait(lk, [&]
-                 {
+        {
             return (measurements = getMeasurements()).size() != 0;
-                 });
+        });
         lk.unlock();
         m_estimator.lock();
         for (auto &measurement : measurements)
@@ -446,7 +383,7 @@ void process()
                 double t = imu_msg->header.stamp.toSec();
                 double img_t = img_msg->header.stamp.toSec() + estimator.td;
                 if (t <= img_t)
-                { 
+                {
                     if (current_time < 0)
                         current_time = t;
                     double dt = t - current_time;
@@ -529,120 +466,3 @@ void process()
     }
 }
 
-int main(int argc, char **argv)
-{
-    ros::init(argc, argv, "vins_estimator");
-    ros::NodeHandle n("~");
-    ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-
-    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
-    std::string config_file = "/home/pang/catkin_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
-    std::string vins_folder_path = "/home/pang/catkin_ws/src/VINS-Mono";
-    readParameters(config_file);
-    estimator.setParameter();
-#ifdef EIGEN_DONT_PARALLELIZE
-    ROS_DEBUG("EIGEN_DONT_PARALLELIZE");
-#endif
-    ROS_WARN("waiting for image and imu...");
-
-    registerPub(n);
-
-    std::thread measurement_process{process};
-
-    // feature_track
-    feature_track::readParameters(config_file, vins_folder_path);;
-
-    for (int i = 0; i < NUM_OF_CAM; i++)
-        trackerData[i].readIntrinsicParameter(feature_track::CAM_NAMES[i]);
-
-    if(feature_track::FISHEYE)
-    {
-        for (int i = 0; i < NUM_OF_CAM; i++)
-        {
-            trackerData[i].fisheye_mask = cv::imread(feature_track::FISHEYE_MASK, 0);
-            if(!trackerData[i].fisheye_mask.data)
-            {
-                ROS_INFO("load mask fail");
-                ROS_BREAK();
-            }
-            else
-                ROS_INFO("load mask success");
-        }
-    }
-
-    pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
-
-
-
-    rosbag::Bag bag;
-    cout << colouredString("\tOpening bag...", RED, REGULAR);
-    bag.open(rosbag_file, rosbag::bagmode::Read);
-    cout << colouredString("\t[DONE!]", GREEN, REGULAR) << endl;
-
-    cout << colouredString("\tQuering topics bag...", RED, REGULAR);
-
-    vector < string > topic_list;
-
-    rosbag::View view(bag);
-
-    vector<const rosbag::ConnectionInfo *> bag_info = view.getConnections();
-    std::set < string > bag_topics;
-
-    for (const rosbag::ConnectionInfo *info : bag_info) {
-        string topic_name;
-        topic_name = info->topic;
-
-        std::cout << "topic: " << topic_name << std::endl;
-
-        topic_list.push_back(topic_name);
-    }
-
-    view.addQuery(bag, rosbag::TopicQuery(topic_list));
-
-    uint64_t lastImuTs = 0;
-    uint64_t lastImageTs = 0;
-    for (auto bagIt : view ) {
-        if (!ros::ok()) break;
-
-        string topic = bagIt.getTopic();
-
-        if (topic == IMU_TOPIC) {
-            sensor_msgs::Imu::ConstPtr imu =
-                    bagIt.instantiate<sensor_msgs::Imu>();
-            if (lastImuTs < imu->header.stamp.toNSec()) {
-
-                imu_callback(imu);
-                lastImuTs = imu->header.stamp.toNSec();
-            }
-        }
-
-        if (topic == feature_track::IMAGE_TOPIC) {
-            sensor_msgs::Image::ConstPtr image =
-                    bagIt.instantiate<sensor_msgs::Image>();
-
-
-
-            if (lastImageTs < image->header.stamp.toNSec()) {
-                img_callback(image);
-                lastImageTs = image->header.stamp.toNSec();
-            }
-
-
-//            cv_bridge::CvImagePtr cv_ptr;
-//            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-//            cv::Mat image_cv = cv_ptr->image;
-//
-//            cv::imshow("image", image_cv);
-            cv::waitKey(20);
-
-        }
-
-
-    }
-
-
-    ros::shutdown();
-//    measurement_process.join();
-
-    return 0;
-}

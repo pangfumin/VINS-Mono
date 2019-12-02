@@ -81,11 +81,15 @@ add_executable(vins_estimator_node src/estimator_node.cpp)
 target_link_libraries(vins_estimator_node ${PROJECT_NAME} ${catkin_LIBRARIES}
         ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
-add_executable(feature_tracker_node src/feature_tracker_node.cpp)
-target_link_libraries(feature_tracker_node camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
-        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
+#add_executable(feature_tracker_node src/feature_tracker_node.cpp)
+#target_link_libraries(feature_tracker_node camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
+#        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
 
 add_executable(data2bag tools/data2bag.cpp )
 target_link_libraries(data2bag camera_model ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)
 
+include_directories(src)
+add_executable(vio_app app/vio_app.cpp app/vin_system.cpp)
+target_link_libraries(vio_app camera_model ${PROJECT_NAME} ${catkin_LIBRARIES}
+        ${OpenCV_LIBS} ${CERES_LIBRARIES} pthread)

@@ -30,7 +30,6 @@ std::condition_variable con;
 double current_time = -1;
 queue<sensor_msgs::ImuConstPtr> imu_buf;
 queue<sensor_msgs::PointCloudConstPtr> feature_buf;
-queue<sensor_msgs::PointCloudConstPtr> relo_buf;
 int sum_of_wait = 0;
 
 std::mutex m_buf;
@@ -56,7 +55,7 @@ vector<uchar> r_status;
 vector<float> r_err;
 queue<sensor_msgs::ImageConstPtr> img_buf;
 
-ros::Publisher pub_img,pub_match;
+ros::Publisher pub_match;
 ros::Publisher pub_restart;
 
 feature_track::FeatureTracker trackerData[feature_track::NUM_OF_CAM];
@@ -66,6 +65,19 @@ bool first_image_flag = true;
 double last_image_time = 0;
 bool init_pub = 0;
 
+void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
+{
+    if (!init_feature)
+    {
+        //skip the first detected feature, which doesn't contain optical flow speed
+        init_feature = 1;
+        return;
+    }
+    m_buf.lock();
+    feature_buf.push(feature_msg);
+    m_buf.unlock();
+    con.notify_one();
+}
 
 void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
 {
@@ -204,8 +216,11 @@ void img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         {
             init_pub = 1;
         }
-        else
-            pub_img.publish(feature_points);
+        else {
+//            pub_img.publish(feature_points);
+            feature_callback(feature_points);
+        }
+
 
         if (feature_track::SHOW_TRACK)
         {
@@ -370,19 +385,7 @@ void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
 }
 
 
-void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
-{
-    if (!init_feature)
-    {
-        //skip the first detected feature, which doesn't contain optical flow speed
-        init_feature = 1;
-        return;
-    }
-    m_buf.lock();
-    feature_buf.push(feature_msg);
-    m_buf.unlock();
-    con.notify_one();
-}
+
 
 void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 {
@@ -405,13 +408,7 @@ void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
     return;
 }
 
-void relocalization_callback(const sensor_msgs::PointCloudConstPtr &points_msg)
-{
-    //printf("relocalization callback! \n");
-    m_buf.lock();
-    relo_buf.push(points_msg);
-    m_buf.unlock();
-}
+
 
 // thread: visual-inertial odometry
 void process()
@@ -471,32 +468,6 @@ void process()
                     //printf("dimu: dt:%f a: %f %f %f w: %f %f %f\n",dt_1, dx, dy, dz, rx, ry, rz);
                 }
             }
-            // set relocalization frame
-            sensor_msgs::PointCloudConstPtr relo_msg = NULL;
-            while (!relo_buf.empty())
-            {
-                relo_msg = relo_buf.front();
-                relo_buf.pop();
-            }
-            if (relo_msg != NULL)
-            {
-                vector<Vector3d> match_points;
-                double frame_stamp = relo_msg->header.stamp.toSec();
-                for (unsigned int i = 0; i < relo_msg->points.size(); i++)
-                {
-                    Vector3d u_v_id;
-                    u_v_id.x() = relo_msg->points[i].x;
-                    u_v_id.y() = relo_msg->points[i].y;
-                    u_v_id.z() = relo_msg->points[i].z;
-                    match_points.push_back(u_v_id);
-                }
-                Vector3d relo_t(relo_msg->channels[0].values[0], relo_msg->channels[0].values[1], relo_msg->channels[0].values[2]);
-                Quaterniond relo_q(relo_msg->channels[0].values[3], relo_msg->channels[0].values[4], relo_msg->channels[0].values[5], relo_msg->channels[0].values[6]);
-                Matrix3d relo_r = relo_q.toRotationMatrix();
-                int frame_index;
-                frame_index = relo_msg->channels[0].values[7];
-                estimator.setReloFrame(frame_stamp, frame_index, match_points, relo_t, relo_r);
-            }
 
             ROS_DEBUG("processing vision data with stamp %f \n", img_msg->header.stamp.toSec());
 
@@ -532,9 +503,7 @@ void process()
             pubPointCloud(estimator, header);
             pubTF(estimator, header);
             pubKeyframe(estimator);
-            if (relo_msg != NULL)
-                pubRelocalization(estimator);
-            //ROS_ERROR("end: %f, at %f", img_msg->header.stamp.toSec(), ros::Time::now().toSec());
+
         }
         m_estimator.unlock();
         m_buf.lock();
@@ -560,15 +529,7 @@ int main(int argc, char **argv)
 
     registerPub(n);
 
-
-    ros::Subscriber sub_imu = n.subscribe(IMU_TOPIC, 2000, imu_callback, ros::TransportHints().tcpNoDelay());
-    ros::Subscriber sub_image = n.subscribe("feature", 2000, feature_callback);
-    ros::Subscriber sub_restart = n.subscribe("restart", 2000, restart_callback);
-    ros::Subscriber sub_relo_points = n.subscribe("/pose_graph/match_points", 2000, relocalization_callback);
-
     std::thread measurement_process{process};
-
-
 
     // feature_track
     feature_track::readParameters(n);
@@ -591,11 +552,10 @@ int main(int argc, char **argv)
         }
     }
 
+    ros::Subscriber sub_imu = n.subscribe(IMU_TOPIC, 2000, imu_callback, ros::TransportHints().tcpNoDelay());
     ros::Subscriber sub_img = n.subscribe(feature_track::IMAGE_TOPIC, 100, img_callback);
 
-    pub_img = n.advertise<sensor_msgs::PointCloud>("feature", 1000);
     pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
-    pub_restart = n.advertise<std_msgs::Bool>("restart",1000);
 
     ros::spin();
 

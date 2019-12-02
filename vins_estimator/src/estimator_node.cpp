@@ -10,6 +10,10 @@
 
 #include "estimator.h"
 #include "parameters.h"
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <rosbag/chunked_file.h>
+
 #include "utility/visualization.h"
 
 #include <sensor_msgs/Image.h>
@@ -17,8 +21,6 @@
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Bool.h>
-#include <cv_bridge/cv_bridge.h>
-#include <message_filters/subscriber.h>
 
 #include "feature_track/feature_tracker.h"
 #include "feature_track/parameters.h"
@@ -64,6 +66,22 @@ int pub_count = 1;
 bool first_image_flag = true;
 double last_image_time = 0;
 bool init_pub = 0;
+
+
+const string RESET = "\033[0m";
+const string BLACK = "0m";
+const string RED = "1m";
+const string GREEN = "2m";
+const string BOLD = "\033[1;3";
+const string REGULAR = "\033[0;3";
+const string UNDERLINE = "\033[4;3";
+const string BACKGROUND = "\033[4";
+
+std::string colouredString(std::string str, std::string colour, std::string option)
+{
+    return option + colour + str + RESET;
+}
+
 
 void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
 {
@@ -413,7 +431,7 @@ void restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 // thread: visual-inertial odometry
 void process()
 {
-    while (true)
+    while (ros::ok())
     {
         std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
         std::unique_lock<std::mutex> lk(m_buf);
@@ -552,12 +570,79 @@ int main(int argc, char **argv)
         }
     }
 
-    ros::Subscriber sub_imu = n.subscribe(IMU_TOPIC, 2000, imu_callback, ros::TransportHints().tcpNoDelay());
-    ros::Subscriber sub_img = n.subscribe(feature_track::IMAGE_TOPIC, 100, img_callback);
-
     pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
 
-    ros::spin();
+
+    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
+    rosbag::Bag bag;
+    cout << colouredString("\tOpening bag...", RED, REGULAR);
+    bag.open(rosbag_file, rosbag::bagmode::Read);
+    cout << colouredString("\t[DONE!]", GREEN, REGULAR) << endl;
+
+    cout << colouredString("\tQuering topics bag...", RED, REGULAR);
+
+    vector < string > topic_list;
+
+    rosbag::View view(bag);
+
+    vector<const rosbag::ConnectionInfo *> bag_info = view.getConnections();
+    std::set < string > bag_topics;
+
+    for (const rosbag::ConnectionInfo *info : bag_info) {
+        string topic_name;
+        topic_name = info->topic;
+
+        std::cout << "topic: " << topic_name << std::endl;
+
+        topic_list.push_back(topic_name);
+    }
+
+    view.addQuery(bag, rosbag::TopicQuery(topic_list));
+
+    uint64_t lastImuTs = 0;
+    uint64_t lastImageTs = 0;
+    for (auto bagIt : view ) {
+        if (!ros::ok()) break;
+
+        string topic = bagIt.getTopic();
+
+        if (topic == IMU_TOPIC) {
+            sensor_msgs::Imu::ConstPtr imu =
+                    bagIt.instantiate<sensor_msgs::Imu>();
+            if (lastImuTs < imu->header.stamp.toNSec()) {
+
+                imu_callback(imu);
+                lastImuTs = imu->header.stamp.toNSec();
+            }
+        }
+
+        if (topic == feature_track::IMAGE_TOPIC) {
+            sensor_msgs::Image::ConstPtr image =
+                    bagIt.instantiate<sensor_msgs::Image>();
+
+
+
+            if (lastImageTs < image->header.stamp.toNSec()) {
+                img_callback(image);
+                lastImageTs = image->header.stamp.toNSec();
+            }
+
+
+            cv_bridge::CvImagePtr cv_ptr;
+            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
+            cv::Mat image_cv = cv_ptr->image;
+
+            cv::imshow("image", image_cv);
+            cv::waitKey(30);
+
+        }
+
+
+    }
+
+
+    ros::shutdown();
+//    measurement_process.join();
 
     return 0;
 }

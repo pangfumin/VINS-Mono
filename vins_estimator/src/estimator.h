@@ -37,6 +37,8 @@ class Estimator
 
     // internal
     void clearState();
+
+    void resetState();
     bool initialStructure();
     bool visualInitialAlign();
     bool relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l);

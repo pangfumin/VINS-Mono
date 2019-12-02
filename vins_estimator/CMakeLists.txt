@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
     rosbag
     )
 
-find_package(OpenCV 3.4 REQUIRED)
+find_package(OpenCV 3.3 REQUIRED)
 
 # message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 

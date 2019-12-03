@@ -111,7 +111,7 @@ int main(int argc, char **argv)
                 lastImageTs = image->header.stamp.toNSec();
             }
 
-            if (image_cnt ++ > 500) break;
+//            if (image_cnt ++ > 500) break;
 
 
 //            cv_bridge::CvImagePtr cv_ptr;

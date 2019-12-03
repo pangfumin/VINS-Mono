@@ -6,7 +6,13 @@
 
 VinSystem::VinSystem() {
     estimator.setParameter();
-    measurement_process = std::thread(&VinSystem::process, this);
+
+
+    mbFinishRequested = false;
+    mbFinished = true;
+
+    mbFeatureTrackFinishRequested = false;
+    mbFeatureTrackFinished = true;
 
     for (int i = 0; i < NUM_OF_CAM; i++)
         trackerData[i].readIntrinsicParameter(feature_track::CAM_NAMES[i]);
@@ -26,8 +32,11 @@ VinSystem::VinSystem() {
         }
     }
 
-
-
+    measurement_process_thread_ = std::thread(&VinSystem::process, this);
+    image_process_thread_ = std::thread(&VinSystem::processImageLoop, this);
+}
+VinSystem::~VinSystem() {
+    shutdown();
 }
 
 
@@ -45,17 +54,22 @@ void VinSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &feature_
     con.notify_one();
 }
 
-void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
+void VinSystem::img_callback(const sensor_msgs::ImageConstPtr img_msg) {
+    m_image_mutex.lock();
+    m_image_buffer.push_back(*img_msg);
+    m_image_mutex.unlock();
+}
+void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
 {
     if(first_image_flag)
     {
         first_image_flag = false;
-        first_image_time = img_msg->header.stamp.toSec();
-        last_image_time = img_msg->header.stamp.toSec();
+        first_image_time = img_msg.header.stamp.toSec();
+        last_image_time = img_msg.header.stamp.toSec();
         return;
     }
     // detect unstable camera stream
-    if (img_msg->header.stamp.toSec() - last_image_time > 1.0 || img_msg->header.stamp.toSec() < last_image_time)
+    if (img_msg.header.stamp.toSec() - last_image_time > 1.0 || img_msg.header.stamp.toSec() < last_image_time)
     {
         ROS_WARN("image discontinue! reset the feature tracker!");
         first_image_flag = true;
@@ -66,15 +80,15 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         pub_restart.publish(restart_flag);
         return;
     }
-    last_image_time = img_msg->header.stamp.toSec();
+    last_image_time = img_msg.header.stamp.toSec();
     // frequency control
-    if (round(1.0 * pub_count / (img_msg->header.stamp.toSec() - first_image_time)) <= feature_track::FREQ)
+    if (round(1.0 * pub_count / (img_msg.header.stamp.toSec() - first_image_time)) <= feature_track::FREQ)
     {
         feature_track::PUB_THIS_FRAME = true;
         // reset the frequency control
-        if (abs(1.0 * pub_count / (img_msg->header.stamp.toSec() - first_image_time) - feature_track::FREQ) < 0.01 * feature_track::FREQ)
+        if (abs(1.0 * pub_count / (img_msg.header.stamp.toSec() - first_image_time) - feature_track::FREQ) < 0.01 * feature_track::FREQ)
         {
-            first_image_time = img_msg->header.stamp.toSec();
+            first_image_time = img_msg.header.stamp.toSec();
             pub_count = 0;
         }
     }
@@ -82,15 +96,15 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         feature_track::PUB_THIS_FRAME = false;
 
     cv_bridge::CvImageConstPtr ptr;
-    if (img_msg->encoding == "8UC1")
+    if (img_msg.encoding == "8UC1")
     {
         sensor_msgs::Image img;
-        img.header = img_msg->header;
-        img.height = img_msg->height;
-        img.width = img_msg->width;
-        img.is_bigendian = img_msg->is_bigendian;
-        img.step = img_msg->step;
-        img.data = img_msg->data;
+        img.header = img_msg.header;
+        img.height = img_msg.height;
+        img.width = img_msg.width;
+        img.is_bigendian = img_msg.is_bigendian;
+        img.step = img_msg.step;
+        img.data = img_msg.data;
         img.encoding = "mono8";
         ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
     }
@@ -104,7 +118,7 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         ROS_DEBUG("processing camera %d", i);
         if (i != 1 || !feature_track::STEREO_TRACK)
             trackerData[i].readImage(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
-                                     img_msg->header.stamp.toSec());
+                                     img_msg.header.stamp.toSec());
         else
         {
             if (feature_track::EQUALIZE)
@@ -141,7 +155,7 @@ void VinSystem::img_callback(const sensor_msgs::ImageConstPtr &img_msg)
         sensor_msgs::ChannelFloat32 velocity_x_of_point;
         sensor_msgs::ChannelFloat32 velocity_y_of_point;
 
-        feature_points->header = img_msg->header;
+        feature_points->header = img_msg.header;
         feature_points->header.frame_id = "world";
 
         vector<set<int>> hash_ids(feature_track::NUM_OF_CAM);
@@ -324,7 +338,7 @@ VinSystem::getMeasurements()
     return measurements;
 }
 
-void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr &imu_msg)
+void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
 {
     if (imu_msg->header.stamp.toSec() <= last_imu_t)
     {
@@ -377,28 +391,31 @@ void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 
 
 // thread: visual-inertial odometry
-void VinSystem::process()
-{
-    while (ros::ok())
-    {
+void VinSystem::process() {
+    mbFinished = false;
+    while (!isFinishRequested()) {
         std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
         std::unique_lock<std::mutex> lk(m_buf);
-        con.wait(lk, [&]
-        {
-            return (measurements = getMeasurements()).size() != 0;
+        con.wait(lk, [&] {
+            return ((measurements = getMeasurements()).size() != 0 || isFinishRequested());
         });
         lk.unlock();
-        m_estimator.lock();
-        for (auto &measurement : measurements)
+
         {
+            if (isFinishRequested()) {
+//                ALOGI("NinebotSlam: [shutdown] CheckFinish  break measurement process loop");
+                break;
+            }
+        }
+
+        m_estimator.lock();
+        for (auto &measurement : measurements) {
             auto img_msg = measurement.second;
             double dx = 0, dy = 0, dz = 0, rx = 0, ry = 0, rz = 0;
-            for (auto &imu_msg : measurement.first)
-            {
+            for (auto &imu_msg : measurement.first) {
                 double t = imu_msg->header.stamp.toSec();
                 double img_t = img_msg->header.stamp.toSec() + estimator.td;
-                if (t <= img_t)
-                {
+                if (t <= img_t) {
                     if (current_time < 0)
                         current_time = t;
                     double dt = t - current_time;
@@ -413,9 +430,7 @@ void VinSystem::process()
                     estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
                     //printf("imu: dt:%f a: %f %f %f w: %f %f %f\n",dt, dx, dy, dz, rx, ry, rz);
 
-                }
-                else
-                {
+                } else {
                     double dt_1 = img_t - current_time;
                     double dt_2 = t - img_t;
                     current_time = img_t;
@@ -439,8 +454,7 @@ void VinSystem::process()
 
             TicToc t_s;
             map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> image;
-            for (unsigned int i = 0; i < img_msg->points.size(); i++)
-            {
+            for (unsigned int i = 0; i < img_msg->points.size(); i++) {
                 int v = img_msg->channels[0].values[i] + 0.5;
                 int feature_id = v / NUM_OF_CAM;
                 int camera_id = v % NUM_OF_CAM;
@@ -454,7 +468,7 @@ void VinSystem::process()
                 ROS_ASSERT(z == 1);
                 Eigen::Matrix<double, 7, 1> xyz_uv_velocity;
                 xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
-                image[feature_id].emplace_back(camera_id,  xyz_uv_velocity);
+                image[feature_id].emplace_back(camera_id, xyz_uv_velocity);
             }
             estimator.processImage(image, img_msg->header);
 
@@ -479,5 +493,151 @@ void VinSystem::process()
         m_state.unlock();
         m_buf.unlock();
     }
+    SetFinish();
+    return;
+
 }
+
+void VinSystem::processImageLoop() {
+    pthread_setname_np(pthread_self(), "VSLAM_Vins2");
+    mbFeatureTrackFinished = false;
+    int cnt =0;
+    while(!isFeatureTrackFinishRequested()) {
+        bool hasNewImage = false;
+
+        m_image_mutex.lock();
+        int  pop_cnt = 0;
+
+        sensor_msgs::Image im;
+        if (m_image_buffer.size() > 0) {
+            //ALOGI("NinebotSlam: m_image_buffer size : %d", m_image_buffer.size());
+            im = m_image_buffer.front();
+            m_image_buffer.pop_front();
+            hasNewImage = true;
+        }
+        m_image_mutex.unlock();
+
+        if (hasNewImage) {
+            processRawImage(im);
+
+
+            if (cnt ++ > 50 ) {
+#if defined(ANDROID) || defined(__ANDROID__)
+                ALOGI("NinebotSlam: vio klt thread id: %d.", gettid());
+#else
+               // ALOGI("NinebotSlam: vio klt thread id: %d.", syscall(SYS_gettid));
+#endif
+
+                cnt = 0;
+            }
+
+        } else {
+            usleep(5*1000);   // Waiting
+        }
+
+    }
+
+    SetFeatureTrackFinish();
+    return;
+}
+
+
+
+void VinSystem::shutdown(){
+//    std::cout << "VinSystem::shutdown()" << std::endl;
+    bool joinFromThisRequest = false; // For avoiding duplicate join.
+    while(!isFinished()){
+        joinFromThisRequest = true;
+        RequestFinish();
+        usleep(1000);
+    }
+    if(joinFromThisRequest)
+        measurement_process_thread_.join();
+
+
+//        ALOGI("NinebotSlam: [shutdown] shutdown measurement process");
+
+//    bool joinFeatureTrackFromThisRequest = false; // For avoiding duplicate join.
+//    while(!isFeatureTrackFinished()){
+//        joinFeatureTrackFromThisRequest = true;
+//        RequestFeatureTrackFinish();
+//        usleep(1000);
+//    }
+//    if(joinFeatureTrackFromThisRequest)
+//        m_image_process.join();
+////        ALOGI("NinebotSlam: [shutdown] shutdown feature tracking");
+}
+
+//void VinSystem::release(){
+//    m_isVinsInitialized = false;
+//}
+
+void VinSystem::RequestFinish()
+{
+    unique_lock<mutex> lock(mMutexFinish);
+    mbFinishRequested = true;
+    con.notify_all();
+//        ALOGI("NinebotSlam: [shutdown] RequestFinish");
+//    std::cout << "NinebotSlam: [shutdown] RequestFinish" << std::endl;
+}
+
+bool VinSystem::isFinishRequested()
+{
+    unique_lock<mutex> lock(mMutexFinish);
+//            ALOGI("NinebotSlam: [shutdown] isFinishRequested: %s",
+//                  mbFinishRequested ?  "true" : "false");
+//    std::cout << "NinebotSlam: [shutdown] isFinishRequested: " << mbFinishRequested << std::endl;
+
+    return mbFinishRequested;
+}
+
+void VinSystem::SetFinish()
+{
+    unique_lock<mutex> lock(mMutexFinish);
+    mbFinished = true;
+//        ALOGI("NinebotSlam: [shutdown] SetFinish");
+//    std::cout << "NinebotSlam: [shutdown] SetFinish" << std::endl;
+}
+
+bool VinSystem::isFinished()
+{
+    unique_lock<mutex> lock(mMutexFinish);
+//        ALOGI("NinebotSlam: [shutdown] isFinished: %s",
+//              mbFinished ?  "true" : "false");
+//    std::cout << "NinebotSlam: [shutdown] isFinished: " << mbFinished << std::endl;
+
+    return mbFinished;
+}
+
+void VinSystem::RequestFeatureTrackFinish()
+{
+    unique_lock<mutex> lock(mFeatureTrackMutexFinish);
+    mbFeatureTrackFinishRequested = true;
+//        ALOGI("NinebotSlam: [shutdown] RequestFeatureTrackFinish");
+
+}
+
+bool VinSystem::isFeatureTrackFinishRequested()
+{
+    unique_lock<mutex> lock(mFeatureTrackMutexFinish);
+//            ALOGI("NinebotSlam: [shutdown] isFeatureTrackFinishRequested: %s",
+//                  mbFeatureTrackFinishRequested ?  "true" : "false");
+    return mbFeatureTrackFinishRequested;
+}
+
+void VinSystem::SetFeatureTrackFinish()
+{
+    unique_lock<mutex> lock(mFeatureTrackMutexFinish);
+    mbFeatureTrackFinished = true;
+//        ALOGI("NinebotSlam: [shutdown] SetFeatureTrackFinish");
+}
+
+bool VinSystem::isFeatureTrackFinished()
+{
+    unique_lock<mutex> lock(mFeatureTrackMutexFinish);
+//        ALOGI("NinebotSlam: [shutdown] isFeatureTrackFinished: %s",
+//              mbFeatureTrackFinished ? "true" : "false");
+    return mbFeatureTrackFinished;
+}
+
 

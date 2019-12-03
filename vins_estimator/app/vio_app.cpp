@@ -32,8 +32,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "vins_estimator");
     ros::NodeHandle n("~");
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
-    std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
-    std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";
+    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
+    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
     std::string vins_folder_path = "/home/pang/catkin_ws/src/VINS-Mono";
 
     // read parameters
@@ -80,8 +80,9 @@ int main(int argc, char **argv)
 
     uint64_t lastImuTs = 0;
     uint64_t lastImageTs = 0;
+    int image_cnt  = 0 ;
     for (auto bagIt : view ) {
-        if (!ros::ok()) break;
+        //if (!ros::ok()) break;
 
         string topic = bagIt.getTopic();
 
@@ -106,6 +107,8 @@ int main(int argc, char **argv)
                 lastImageTs = image->header.stamp.toNSec();
             }
 
+            if (image_cnt ++ > 100) break;
+
 
 //            cv_bridge::CvImagePtr cv_ptr;
 //            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
@@ -120,9 +123,13 @@ int main(int argc, char **argv)
     }
 
 
-    ros::shutdown();
 
-    return 0;
+    //ros::shutdown();
+
+    std::cout << "shutdown" << std::endl;
+//    vinSystem.shutdown();
+
+//    return 0;
 }
 
 

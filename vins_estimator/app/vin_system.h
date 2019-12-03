@@ -38,12 +38,12 @@
 
 class VinSystem {
 public:
-
-
     VinSystem();
-    void imu_callback(const sensor_msgs::ImuConstPtr &imu_msg);
-    void img_callback(const sensor_msgs::ImageConstPtr &img_msg);
+    ~VinSystem();
+    void imu_callback(const sensor_msgs::ImuConstPtr imu_msg);
+    void img_callback(const sensor_msgs::ImageConstPtr img_msg);
 
+    void shutdown();
     ros::Publisher pub_match;
     ros::Publisher pub_restart;
 
@@ -57,13 +57,18 @@ private:
 
     void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
     void process();
+    void processImageLoop();
+    void processRawImage(const sensor_msgs::Image &img_msg);
 
     Estimator estimator;
-    std::thread measurement_process;
     std::condition_variable con;
     double current_time = -1;
     queue<sensor_msgs::ImuConstPtr> imu_buf;
     queue<sensor_msgs::PointCloudConstPtr> feature_buf;
+    std::mutex m_image_mutex;
+
+    std::deque<sensor_msgs::Image> m_image_buffer;
+
     int sum_of_wait = 0;
 
     std::mutex m_buf;
@@ -85,14 +90,32 @@ private:
 #define SHOW_UNDISTORTION 0
 
 
-
-
     feature_track::FeatureTracker trackerData[feature_track::NUM_OF_CAM];
     double first_image_time;
     int pub_count = 1;
     bool first_image_flag = true;
     double last_image_time = 0;
     bool init_pub = 0;
+
+
+    std::thread measurement_process_thread_;
+    std::thread image_process_thread_;
+    bool mbFinishRequested;
+    bool mbFinished;
+    std::mutex mMutexFinish;
+    void RequestFinish();
+    bool isFinishRequested();
+    void SetFinish();
+    bool isFinished();
+
+    bool mbFeatureTrackFinishRequested;
+    bool mbFeatureTrackFinished;
+    std::mutex mFeatureTrackMutexFinish;
+    void RequestFeatureTrackFinish();
+    bool isFeatureTrackFinishRequested();
+    void SetFeatureTrackFinish();
+    bool isFeatureTrackFinished();
+
 };
 
 

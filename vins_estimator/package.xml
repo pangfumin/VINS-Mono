@@ -3,8 +3,7 @@
   <name>vins_estimator</name>
   <version>0.0.0</version>
   <description>
-    ROVIO with Localization Integrated (ROVIO-LI): Integration of ROVIO into
-    Maplab to extend it with localization and mapping capabilities.
+    vins_estimator
   </description>
   <maintainer email="maplab-dev@mavt.ethz.ch">maplab-developers</maintainer>
   <license>Apache 2.0</license>

@@ -54,6 +54,10 @@ cs_add_executable(vio_app app/vio_app.cpp app/vin_system.cpp
         )
 target_link_libraries(vio_app ${PROJECT_NAME}_lib)
 
+cs_add_executable(data2bag tools/data2bag.cpp)
+target_link_libraries(data2bag ${PROJECT_NAME}_lib)
+
+
 #########
 # SHARE #
 #########

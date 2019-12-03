@@ -37,6 +37,7 @@ VinSystem::VinSystem() {
 }
 VinSystem::~VinSystem() {
     shutdown();
+    estimator.resetState();
 }
 
 

@@ -15,8 +15,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
-#include "vins_estimator/estimator.h"
-#include "vins_estimator/parameters.h"
+
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <rosbag/chunked_file.h>
@@ -29,16 +28,19 @@
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Bool.h>
 
-#include "vins_estimator/feature_track/feature_tracker.h"
-#include "vins_estimator/feature_track/parameters.h"
 
 
+class Estimator;
+
+namespace feature_track {
+    class FeatureTracker;
+}
 
 
 
 class VinSystem {
 public:
-    VinSystem();
+    VinSystem(const std::string config_file);
     ~VinSystem();
     void imu_callback(const sensor_msgs::ImuConstPtr imu_msg);
     void img_callback(const sensor_msgs::ImageConstPtr img_msg);
@@ -60,7 +62,7 @@ private:
     void processImageLoop();
     void processRawImage(const sensor_msgs::Image &img_msg);
 
-    Estimator estimator;
+    std::shared_ptr<Estimator> estimator_;
     std::condition_variable con;
     double current_time = -1;
     queue<sensor_msgs::ImuConstPtr> imu_buf;
@@ -90,7 +92,7 @@ private:
 #define SHOW_UNDISTORTION 0
 
 
-    feature_track::FeatureTracker trackerData[feature_track::NUM_OF_CAM];
+    std::vector<std::shared_ptr<feature_track::FeatureTracker>> trackerData_;
     double first_image_time;
     int pub_count = 1;
     bool first_image_flag = true;

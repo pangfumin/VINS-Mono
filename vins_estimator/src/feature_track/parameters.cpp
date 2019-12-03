@@ -31,14 +31,14 @@ namespace feature_track {
         return ans;
     }
 
-    void readParameters(const std::string config_file, const std::string vins_folder_path) {
+    void readParameters(const std::string config_file) {
 //        std::string config_file;
 //        config_file = readParam<std::string>(n, "config_file");
         cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
         if (!fsSettings.isOpened()) {
             std::cerr << "ERROR: Wrong path to settings" << std::endl;
         }
-        std::string VINS_FOLDER_PATH = vins_folder_path;
+//        std::string VINS_FOLDER_PATH = vins_folder_path;
 //        std::string VINS_FOLDER_PATH = readParam<std::string>(n, "vins_folder");
 
         fsSettings["image_topic"] >> IMAGE_TOPIC;
@@ -52,8 +52,8 @@ namespace feature_track {
         SHOW_TRACK = fsSettings["show_track"];
         EQUALIZE = fsSettings["equalize"];
         FISHEYE = fsSettings["fisheye"];
-        if (FISHEYE == 1)
-            FISHEYE_MASK = VINS_FOLDER_PATH + "config/fisheye_mask.jpg";
+//        if (FISHEYE == 1)
+//            FISHEYE_MASK = VINS_FOLDER_PATH + "config/fisheye_mask.jpg";
         CAM_NAMES.push_back(config_file);
 
         WINDOW_SIZE = 20;

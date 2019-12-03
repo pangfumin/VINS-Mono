@@ -3,9 +3,19 @@
 //
 
 #include "vin_system.h"
+#include "vins_estimator/feature_track/parameters.h"
+#include "vins_estimator/parameters.h"
+#include "vins_estimator/feature_track/feature_tracker.h"
+#include "vins_estimator/estimator.h"
 
-VinSystem::VinSystem() {
-    estimator.setParameter();
+
+
+VinSystem::VinSystem(const std::string config_file) {
+
+    readParameters(config_file);
+    feature_track::readParameters(config_file);
+    estimator_ = std::make_shared<Estimator>();
+    estimator_->setParameter();
 
 
     mbFinishRequested = false;
@@ -14,15 +24,17 @@ VinSystem::VinSystem() {
     mbFeatureTrackFinishRequested = false;
     mbFeatureTrackFinished = true;
 
-    for (int i = 0; i < NUM_OF_CAM; i++)
-        trackerData[i].readIntrinsicParameter(feature_track::CAM_NAMES[i]);
+    for (int i = 0; i < NUM_OF_CAM; i++) {
+        trackerData_.push_back(std::make_shared<feature_track::FeatureTracker>());
+        trackerData_[i]->readIntrinsicParameter(feature_track::CAM_NAMES[i]);
+    }
 
     if(feature_track::FISHEYE)
     {
         for (int i = 0; i < NUM_OF_CAM; i++)
         {
-            trackerData[i].fisheye_mask = cv::imread(feature_track::FISHEYE_MASK, 0);
-            if(!trackerData[i].fisheye_mask.data)
+            trackerData_[i]->fisheye_mask = cv::imread(feature_track::FISHEYE_MASK, 0);
+            if(!trackerData_[i]->fisheye_mask.data)
             {
                 ROS_INFO("load mask fail");
                 ROS_BREAK();
@@ -37,7 +49,7 @@ VinSystem::VinSystem() {
 }
 VinSystem::~VinSystem() {
     shutdown();
-    estimator.resetState();
+    estimator_->resetState();
 }
 
 
@@ -118,21 +130,21 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
     {
         ROS_DEBUG("processing camera %d", i);
         if (i != 1 || !feature_track::STEREO_TRACK)
-            trackerData[i].readImage(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
+            trackerData_[i]->readImage(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
                                      img_msg.header.stamp.toSec());
         else
         {
             if (feature_track::EQUALIZE)
             {
                 cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                clahe->apply(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)), trackerData[i].cur_img);
+                clahe->apply(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)), trackerData_[i]->cur_img);
             }
             else
-                trackerData[i].cur_img = ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1));
+                trackerData_[i]->cur_img = ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1));
         }
 
 #if SHOW_UNDISTORTION
-        trackerData[i].showUndistortion("undistrotion_" + std::to_string(i));
+        trackerData_[i]->showUndistortion("undistrotion_" + std::to_string(i));
 #endif
     }
 
@@ -141,7 +153,7 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
         bool completed = false;
         for (int j = 0; j < feature_track::NUM_OF_CAM; j++)
             if (j != 1 || !feature_track::STEREO_TRACK)
-                completed |= trackerData[j].updateID(i);
+                completed |= trackerData_[j]->updateID(i);
         if (!completed)
             break;
     }
@@ -162,13 +174,13 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
         vector<set<int>> hash_ids(feature_track::NUM_OF_CAM);
         for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
         {
-            auto &un_pts = trackerData[i].cur_un_pts;
-            auto &cur_pts = trackerData[i].cur_pts;
-            auto &ids = trackerData[i].ids;
-            auto &pts_velocity = trackerData[i].pts_velocity;
+            auto &un_pts = trackerData_[i]->cur_un_pts;
+            auto &cur_pts = trackerData_[i]->cur_pts;
+            auto &ids = trackerData_[i]->ids;
+            auto &pts_velocity = trackerData_[i]->pts_velocity;
             for (unsigned int j = 0; j < ids.size(); j++)
             {
-                if (trackerData[i].track_cnt[j] > 1)
+                if (trackerData_[i]->track_cnt[j] > 1)
                 {
                     int p_id = ids[j];
                     hash_ids[i].insert(p_id);
@@ -214,24 +226,24 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
                 cv::Mat tmp_img = stereo_img.rowRange(i * feature_track::ROW, (i + 1) * feature_track::ROW);
                 cv::cvtColor(show_img, tmp_img, CV_GRAY2RGB);
 
-                for (unsigned int j = 0; j < trackerData[i].cur_pts.size(); j++)
+                for (unsigned int j = 0; j < trackerData_[i]->cur_pts.size(); j++)
                 {
-                    double len = std::min(1.0, 1.0 * trackerData[i].track_cnt[j] / feature_track::WINDOW_SIZE);
-                    cv::circle(tmp_img, trackerData[i].cur_pts[j], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
+                    double len = std::min(1.0, 1.0 * trackerData_[i]->track_cnt[j] / feature_track::WINDOW_SIZE);
+                    cv::circle(tmp_img, trackerData_[i]->cur_pts[j], 2, cv::Scalar(255 * (1 - len), 0, 255 * len), 2);
                     //draw speed line
                     /*
-                    Vector2d tmp_cur_un_pts (trackerData[i].cur_un_pts[j].x, trackerData[i].cur_un_pts[j].y);
-                    Vector2d tmp_pts_velocity (trackerData[i].pts_velocity[j].x, trackerData[i].pts_velocity[j].y);
+                    Vector2d tmp_cur_un_pts (trackerData_[i]->cur_un_pts[j].x, trackerData_[i]->cur_un_pts[j].y);
+                    Vector2d tmp_pts_velocity (trackerData_[i]->pts_velocity[j].x, trackerData_[i]->pts_velocity[j].y);
                     Vector3d tmp_prev_un_pts;
                     tmp_prev_un_pts.head(2) = tmp_cur_un_pts - 0.10 * tmp_pts_velocity;
                     tmp_prev_un_pts.z() = 1;
                     Vector2d tmp_prev_uv;
-                    trackerData[i].m_camera->spaceToPlane(tmp_prev_un_pts, tmp_prev_uv);
-                    cv::line(tmp_img, trackerData[i].cur_pts[j], cv::Point2f(tmp_prev_uv.x(), tmp_prev_uv.y()), cv::Scalar(255 , 0, 0), 1 , 8, 0);
+                    trackerData_[i]->m_camera->spaceToPlane(tmp_prev_un_pts, tmp_prev_uv);
+                    cv::line(tmp_img, trackerData_[i]->cur_pts[j], cv::Point2f(tmp_prev_uv.x(), tmp_prev_uv.y()), cv::Scalar(255 , 0, 0), 1 , 8, 0);
                     */
                     //char name[10];
-                    //sprintf(name, "%d", trackerData[i].ids[j]);
-                    //cv::putText(tmp_img, name, trackerData[i].cur_pts[j], cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
+                    //sprintf(name, "%d", trackerData_[i]->ids[j]);
+                    //cv::putText(tmp_img, name, trackerData_[i]->cur_pts[j], cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0));
                 }
             }
             //cv::imshow("vis", stereo_img);
@@ -265,12 +277,12 @@ void VinSystem::predict(const sensor_msgs::ImuConstPtr &imu_msg)
     double rz = imu_msg->angular_velocity.z;
     Eigen::Vector3d angular_velocity{rx, ry, rz};
 
-    Eigen::Vector3d un_acc_0 = tmp_Q * (acc_0 - tmp_Ba) - estimator.g;
+    Eigen::Vector3d un_acc_0 = tmp_Q * (acc_0 - tmp_Ba) - estimator_->g;
 
     Eigen::Vector3d un_gyr = 0.5 * (gyr_0 + angular_velocity) - tmp_Bg;
     tmp_Q = tmp_Q * Utility::deltaQ(un_gyr * dt);
 
-    Eigen::Vector3d un_acc_1 = tmp_Q * (linear_acceleration - tmp_Ba) - estimator.g;
+    Eigen::Vector3d un_acc_1 = tmp_Q * (linear_acceleration - tmp_Ba) - estimator_->g;
 
     Eigen::Vector3d un_acc = 0.5 * (un_acc_0 + un_acc_1);
 
@@ -285,13 +297,13 @@ void VinSystem::update()
 {
     TicToc t_predict;
     latest_time = current_time;
-    tmp_P = estimator.Ps[WINDOW_SIZE];
-    tmp_Q = estimator.Rs[WINDOW_SIZE];
-    tmp_V = estimator.Vs[WINDOW_SIZE];
-    tmp_Ba = estimator.Bas[WINDOW_SIZE];
-    tmp_Bg = estimator.Bgs[WINDOW_SIZE];
-    acc_0 = estimator.acc_0;
-    gyr_0 = estimator.gyr_0;
+    tmp_P = estimator_->Ps[WINDOW_SIZE];
+    tmp_Q = estimator_->Rs[WINDOW_SIZE];
+    tmp_V = estimator_->Vs[WINDOW_SIZE];
+    tmp_Ba = estimator_->Bas[WINDOW_SIZE];
+    tmp_Bg = estimator_->Bgs[WINDOW_SIZE];
+    acc_0 = estimator_->acc_0;
+    gyr_0 = estimator_->gyr_0;
 
     queue<sensor_msgs::ImuConstPtr> tmp_imu_buf = imu_buf;
     for (sensor_msgs::ImuConstPtr tmp_imu_msg; !tmp_imu_buf.empty(); tmp_imu_buf.pop())
@@ -309,14 +321,14 @@ VinSystem::getMeasurements()
         if (imu_buf.empty() || feature_buf.empty())
             return measurements;
 
-        if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator.td))
+        if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator_->td))
         {
             //ROS_WARN("wait for imu, only should happen at the beginning");
             sum_of_wait++;
             return measurements;
         }
 
-        if (!(imu_buf.front()->header.stamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator.td))
+        if (!(imu_buf.front()->header.stamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator_->td))
         {
             ROS_WARN("throw img, only should happen at the beginning");
             feature_buf.pop();
@@ -326,7 +338,7 @@ VinSystem::getMeasurements()
         feature_buf.pop();
 
         std::vector<sensor_msgs::ImuConstPtr> IMUs;
-        while (imu_buf.front()->header.stamp.toSec() < img_msg->header.stamp.toSec() + estimator.td)
+        while (imu_buf.front()->header.stamp.toSec() < img_msg->header.stamp.toSec() + estimator_->td)
         {
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
@@ -360,7 +372,7 @@ void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
         predict(imu_msg);
         std_msgs::Header header = imu_msg->header;
         header.frame_id = "world";
-        if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
             pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
     }
 }
@@ -380,8 +392,8 @@ void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
             imu_buf.pop();
         m_buf.unlock();
         m_estimator.lock();
-        estimator.clearState();
-        estimator.setParameter();
+        estimator_->clearState();
+        estimator_->setParameter();
         m_estimator.unlock();
         current_time = -1;
         last_imu_t = 0;
@@ -415,7 +427,7 @@ void VinSystem::process() {
             double dx = 0, dy = 0, dz = 0, rx = 0, ry = 0, rz = 0;
             for (auto &imu_msg : measurement.first) {
                 double t = imu_msg->header.stamp.toSec();
-                double img_t = img_msg->header.stamp.toSec() + estimator.td;
+                double img_t = img_msg->header.stamp.toSec() + estimator_->td;
                 if (t <= img_t) {
                     if (current_time < 0)
                         current_time = t;
@@ -428,7 +440,7 @@ void VinSystem::process() {
                     rx = imu_msg->angular_velocity.x;
                     ry = imu_msg->angular_velocity.y;
                     rz = imu_msg->angular_velocity.z;
-                    estimator.processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+                    estimator_->processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
                     //printf("imu: dt:%f a: %f %f %f w: %f %f %f\n",dt, dx, dy, dz, rx, ry, rz);
 
                 } else {
@@ -446,7 +458,7 @@ void VinSystem::process() {
                     rx = w1 * rx + w2 * imu_msg->angular_velocity.x;
                     ry = w1 * ry + w2 * imu_msg->angular_velocity.y;
                     rz = w1 * rz + w2 * imu_msg->angular_velocity.z;
-                    estimator.processIMU(dt_1, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+                    estimator_->processIMU(dt_1, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
                     //printf("dimu: dt:%f a: %f %f %f w: %f %f %f\n",dt_1, dx, dy, dz, rx, ry, rz);
                 }
             }
@@ -471,25 +483,25 @@ void VinSystem::process() {
                 xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
                 image[feature_id].emplace_back(camera_id, xyz_uv_velocity);
             }
-            estimator.processImage(image, img_msg->header);
+            estimator_->processImage(image, img_msg->header);
 
             double whole_t = t_s.toc();
-            printStatistics(estimator, whole_t);
+            printStatistics(*estimator_, whole_t);
             std_msgs::Header header = img_msg->header;
             header.frame_id = "world";
 
-            pubOdometry(estimator, header);
-            pubKeyPoses(estimator, header);
-            pubCameraPose(estimator, header);
-            pubPointCloud(estimator, header);
-            pubTF(estimator, header);
-            pubKeyframe(estimator);
+            pubOdometry(*estimator_, header);
+            pubKeyPoses(*estimator_, header);
+            pubCameraPose(*estimator_, header);
+            pubPointCloud(*estimator_, header);
+            pubTF(*estimator_, header);
+            pubKeyframe(*estimator_);
 
         }
         m_estimator.unlock();
         m_buf.lock();
         m_state.lock();
-        if (estimator.solver_flag == Estimator::SolverFlag::NON_LINEAR)
+        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
             update();
         m_state.unlock();
         m_buf.unlock();

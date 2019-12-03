@@ -24,5 +24,5 @@ namespace  feature_track {
     extern int FISHEYE;
     extern bool PUB_THIS_FRAME;
 
-    void readParameters(const std::string config_file, const std::string vins_folder_path);
+    void readParameters(const std::string config_file);
 }

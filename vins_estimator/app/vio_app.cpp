@@ -25,6 +25,25 @@ std::string colouredString(std::string str, std::string colour, std::string opti
     return option + colour + str + RESET;
 }
 
+std::string IMU_TOPIC;
+std::string IMAGE_TOPIC;
+void readTopics(const std::string config_file)
+{
+//    std::string config_file;
+//    config_file = readParam<std::string>(n, "config_file");
+    cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
+    if(!fsSettings.isOpened())
+    {
+        std::cerr << "ERROR: Wrong path to settings" << std::endl;
+    }
+
+    fsSettings["imu_topic"] >> IMU_TOPIC;
+    fsSettings["image_topic"] >> IMAGE_TOPIC;
+
+
+
+    fsSettings.release();
+}
 
 
 int main(int argc, char **argv)
@@ -34,17 +53,12 @@ int main(int argc, char **argv)
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
 //    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
 //    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
-//    std::string vins_folder_path = "/home/pang/catkin_ws/src/VINS-Mono";
 
     std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
     std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";
-    std::string vins_folder_path = "/home/pang/catkin_ws/src/VINS-Mono";
 
-    // read parameters
-    readParameters(config_file);
-    feature_track::readParameters(config_file, vins_folder_path);
-
-    VinSystem vinSystem;
+    readTopics(config_file);
+    VinSystem vinSystem(config_file);
 
 
 
@@ -100,7 +114,7 @@ int main(int argc, char **argv)
             }
         }
 
-        if (topic == feature_track::IMAGE_TOPIC) {
+        if (topic == IMAGE_TOPIC) {
             sensor_msgs::Image::ConstPtr image =
                     bagIt.instantiate<sensor_msgs::Image>();
 
@@ -128,12 +142,10 @@ int main(int argc, char **argv)
 
 
 
-    //ros::shutdown();
 
     std::cout << "shutdown" << std::endl;
-//    vinSystem.shutdown();
 
-//    return 0;
+    return 0;
 }
 
 

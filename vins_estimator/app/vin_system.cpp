@@ -544,7 +544,6 @@ void VinSystem::processImageLoop() {
 
 
 void VinSystem::shutdown(){
-//    std::cout << "VinSystem::shutdown()" << std::endl;
     bool joinFromThisRequest = false; // For avoiding duplicate join.
     while(!isFinished()){
         joinFromThisRequest = true;
@@ -554,18 +553,15 @@ void VinSystem::shutdown(){
     if(joinFromThisRequest)
         measurement_process_thread_.join();
 
-
-//        ALOGI("NinebotSlam: [shutdown] shutdown measurement process");
-
-//    bool joinFeatureTrackFromThisRequest = false; // For avoiding duplicate join.
-//    while(!isFeatureTrackFinished()){
-//        joinFeatureTrackFromThisRequest = true;
-//        RequestFeatureTrackFinish();
-//        usleep(1000);
-//    }
-//    if(joinFeatureTrackFromThisRequest)
-//        m_image_process.join();
-////        ALOGI("NinebotSlam: [shutdown] shutdown feature tracking");
+    bool joinFeatureTrackFromThisRequest = false; // For avoiding duplicate join.
+    while(!isFeatureTrackFinished()){
+        joinFeatureTrackFromThisRequest = true;
+        RequestFeatureTrackFinish();
+        usleep(1000);
+    }
+    if(joinFeatureTrackFromThisRequest)
+        image_process_thread_.join();
+//        ALOGI("NinebotSlam: [shutdown] shutdown feature tracking");
 }
 
 //void VinSystem::release(){
@@ -578,7 +574,6 @@ void VinSystem::RequestFinish()
     mbFinishRequested = true;
     con.notify_all();
 //        ALOGI("NinebotSlam: [shutdown] RequestFinish");
-//    std::cout << "NinebotSlam: [shutdown] RequestFinish" << std::endl;
 }
 
 bool VinSystem::isFinishRequested()
@@ -586,7 +581,6 @@ bool VinSystem::isFinishRequested()
     unique_lock<mutex> lock(mMutexFinish);
 //            ALOGI("NinebotSlam: [shutdown] isFinishRequested: %s",
 //                  mbFinishRequested ?  "true" : "false");
-//    std::cout << "NinebotSlam: [shutdown] isFinishRequested: " << mbFinishRequested << std::endl;
 
     return mbFinishRequested;
 }
@@ -596,7 +590,6 @@ void VinSystem::SetFinish()
     unique_lock<mutex> lock(mMutexFinish);
     mbFinished = true;
 //        ALOGI("NinebotSlam: [shutdown] SetFinish");
-//    std::cout << "NinebotSlam: [shutdown] SetFinish" << std::endl;
 }
 
 bool VinSystem::isFinished()
@@ -604,7 +597,6 @@ bool VinSystem::isFinished()
     unique_lock<mutex> lock(mMutexFinish);
 //        ALOGI("NinebotSlam: [shutdown] isFinished: %s",
 //              mbFinished ?  "true" : "false");
-//    std::cout << "NinebotSlam: [shutdown] isFinished: " << mbFinished << std::endl;
 
     return mbFinished;
 }

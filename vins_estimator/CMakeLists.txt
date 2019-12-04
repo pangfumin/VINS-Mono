@@ -56,6 +56,9 @@ target_link_libraries(vio_app ${PROJECT_NAME}_lib)
 cs_add_executable(data2bag tools/data2bag.cpp)
 target_link_libraries(data2bag ${PROJECT_NAME}_lib)
 
+cs_add_executable(generate_mask tools/generate_mask.cpp)
+target_link_libraries(generate_mask ${PROJECT_NAME}_lib)
+
 
 #########
 # SHARE #

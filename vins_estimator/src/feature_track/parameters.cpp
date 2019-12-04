@@ -1,4 +1,5 @@
 #include "vins_estimator/feature_track/parameters.h"
+#include <maplab-common/file-system-tools.h>
 
 namespace feature_track {
     std::string IMAGE_TOPIC;
@@ -55,6 +56,13 @@ namespace feature_track {
 //        if (FISHEYE == 1)
 //            FISHEYE_MASK = VINS_FOLDER_PATH + "config/fisheye_mask.jpg";
         CAM_NAMES.push_back(config_file);
+
+        if (fsSettings["mask_file_path"].isString()) {
+            std::string mask_file_path = fsSettings["mask_file_path"];
+            if(common::fileExists(mask_file_path)) {
+                FISHEYE_MASK =  mask_file_path;
+            }
+        }
 
         WINDOW_SIZE = 20;
         STEREO_TRACK = false;

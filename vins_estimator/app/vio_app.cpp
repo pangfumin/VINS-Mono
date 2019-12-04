@@ -51,6 +51,9 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "vins_estimator");
     ros::NodeHandle n("~");
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
+//    std::string rosbag_file = "/home/pang/software/MYNT-EYE-S-SDK/2019-11-19-10-29-33.bag";
+//    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/mynteye/mynteye_s_config.yaml";
+
     std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
     std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
 

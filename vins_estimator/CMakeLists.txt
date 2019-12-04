@@ -28,7 +28,6 @@ cs_add_library(${PROJECT_NAME}_lib
         src/camodocal/gpl/gpl.cc
         src/camodocal/gpl/EigenQuaternionParameterization.cc
 
-        src/estimator_node.cpp
         src/parameters.cpp
         src/estimator.cpp
         src/feature_manager.cpp

@@ -112,7 +112,17 @@ int main(int argc, char **argv)
                     bagIt.instantiate<sensor_msgs::Imu>();
             if (lastImuTs < imu->header.stamp.toNSec()) {
 
-                vinSystem.imu_callback(imu);
+//                vinSystem.imu_callback(imu);
+                Eigen::Vector3d acc, gyro;
+                acc.x() = imu->linear_acceleration.x;
+                acc.y() = imu->linear_acceleration.y;
+                acc.z() = imu->linear_acceleration.z;
+
+                gyro.x() = imu->angular_velocity.x;
+                gyro.y() = imu->angular_velocity.y;
+                gyro.z() = imu->angular_velocity.z;
+
+                vinSystem.addImuMeasurement(imu->header.stamp, acc, gyro);
                 lastImuTs = imu->header.stamp.toNSec();
             }
         }

@@ -262,9 +262,9 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
 }
 
 
-void VinSystem::predict(const sensor_msgs::ImuConstPtr &imu_msg)
+void VinSystem::predict(const ImuMeasurement &imu_msg)
 {
-    double t = imu_msg->header.stamp.toSec();
+    double t = imu_msg.timeStamp.toSec();
     if (init_imu)
     {
         latest_time = t;
@@ -274,15 +274,8 @@ void VinSystem::predict(const sensor_msgs::ImuConstPtr &imu_msg)
     double dt = t - latest_time;
     latest_time = t;
 
-    double dx = imu_msg->linear_acceleration.x;
-    double dy = imu_msg->linear_acceleration.y;
-    double dz = imu_msg->linear_acceleration.z;
-    Eigen::Vector3d linear_acceleration{dx, dy, dz};
-
-    double rx = imu_msg->angular_velocity.x;
-    double ry = imu_msg->angular_velocity.y;
-    double rz = imu_msg->angular_velocity.z;
-    Eigen::Vector3d angular_velocity{rx, ry, rz};
+    Eigen::Vector3d linear_acceleration = imu_msg.measurement.accelerometers;
+    Eigen::Vector3d angular_velocity = imu_msg.measurement.gyroscopes;
 
     Eigen::Vector3d un_acc_0 = tmp_Q * (acc_0 - tmp_Ba) - estimator_->g;
 
@@ -312,30 +305,30 @@ void VinSystem::update()
     acc_0 = estimator_->acc_0;
     gyr_0 = estimator_->gyr_0;
 
-    queue<sensor_msgs::ImuConstPtr> tmp_imu_buf = imu_buf;
+    queue<ImuMeasurement> tmp_imu_buf = imu_buf;
     for (sensor_msgs::ImuConstPtr tmp_imu_msg; !tmp_imu_buf.empty(); tmp_imu_buf.pop())
         predict(tmp_imu_buf.front());
 
 }
 
-std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>>
+std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>>
 VinSystem::getMeasurements()
 {
-    std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
+    std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>> measurements;
 
     while (true)
     {
         if (imu_buf.empty() || feature_buf.empty())
             return measurements;
 
-        if (!(imu_buf.back()->header.stamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator_->td))
+        if (!(imu_buf.back().timeStamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator_->td))
         {
             //ROS_WARN("wait for imu, only should happen at the beginning");
             sum_of_wait++;
             return measurements;
         }
 
-        if (!(imu_buf.front()->header.stamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator_->td))
+        if (!(imu_buf.front().timeStamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator_->td))
         {
             ROS_WARN("throw img, only should happen at the beginning");
             feature_buf.pop();
@@ -344,8 +337,8 @@ VinSystem::getMeasurements()
         sensor_msgs::PointCloudConstPtr img_msg = feature_buf.front();
         feature_buf.pop();
 
-        std::vector<sensor_msgs::ImuConstPtr> IMUs;
-        while (imu_buf.front()->header.stamp.toSec() < img_msg->header.stamp.toSec() + estimator_->td)
+        std::vector<ImuMeasurement> IMUs;
+        while (imu_buf.front().timeStamp.toSec() < img_msg->header.stamp.toSec() + estimator_->td)
         {
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
@@ -357,32 +350,32 @@ VinSystem::getMeasurements()
     }
     return measurements;
 }
-
-void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
-{
-    if (imu_msg->header.stamp.toSec() <= last_imu_t)
-    {
-        ROS_WARN("imu message in disorder!");
-        return;
-    }
-    last_imu_t = imu_msg->header.stamp.toSec();
-
-    m_buf.lock();
-    imu_buf.push(imu_msg);
-    m_buf.unlock();
-    con.notify_one();
-
-    last_imu_t = imu_msg->header.stamp.toSec();
-
-    {
-        std::lock_guard<std::mutex> lg(m_state);
-        predict(imu_msg);
-        std_msgs::Header header = imu_msg->header;
-        header.frame_id = "world";
-        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
-            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
-    }
-}
+//
+//void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
+//{
+//    if (imu_msg->header.stamp.toSec() <= last_imu_t)
+//    {
+//        ROS_WARN("imu message in disorder!");
+//        return;
+//    }
+//    last_imu_t = imu_msg->header.stamp.toSec();
+//
+//    m_buf.lock();
+//    imu_buf.push(imu_msg);
+//    m_buf.unlock();
+//    con.notify_one();
+//
+//    last_imu_t = imu_msg->header.stamp.toSec();
+//
+//    {
+//        std::lock_guard<std::mutex> lg(m_state);
+//        predict(imu_msg);
+//        std_msgs::Header header = imu_msg->header;
+//        header.frame_id = "world";
+//        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
+//            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
+//    }
+//}
 
 bool VinSystem::addImage(const ros::Time & stamp, size_t cameraIndex,
                       const cv::Mat & image,
@@ -401,6 +394,33 @@ bool VinSystem::addImage(const ros::Time & stamp, size_t cameraIndex,
 bool VinSystem::addImuMeasurement(const ros::Time & stamp,
                                const Eigen::Vector3d & alpha,
                                const Eigen::Vector3d & omega)  {
+    if (stamp.toSec() <= last_imu_t)
+    {
+        ROS_WARN("imu message in disorder!");
+        return false;
+    }
+    last_imu_t = stamp.toSec();
+
+    ImuMeasurement imu_msg;
+    imu_msg.timeStamp = stamp;
+    imu_msg.measurement.accelerometers = alpha;
+    imu_msg.measurement.gyroscopes = omega;
+    m_buf.lock();
+    imu_buf.push(imu_msg);
+    m_buf.unlock();
+    con.notify_one();
+
+    last_imu_t = stamp.toSec();
+
+    {
+        std::lock_guard<std::mutex> lg(m_state);
+        predict(imu_msg);
+        std_msgs::Header header;
+        header.stamp = stamp;
+        header.frame_id = "world";
+        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
+            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
+    }
     return true;
 }
 
@@ -435,7 +455,7 @@ void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 void VinSystem::process() {
     mbFinished = false;
     while (!isFinishRequested()) {
-        std::vector<std::pair<std::vector<sensor_msgs::ImuConstPtr>, sensor_msgs::PointCloudConstPtr>> measurements;
+        std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>> measurements;
         std::unique_lock<std::mutex> lk(m_buf);
         con.wait(lk, [&] {
             return ((measurements = getMeasurements()).size() != 0 || isFinishRequested());
@@ -454,7 +474,7 @@ void VinSystem::process() {
             auto img_msg = measurement.second;
             double dx = 0, dy = 0, dz = 0, rx = 0, ry = 0, rz = 0;
             for (auto &imu_msg : measurement.first) {
-                double t = imu_msg->header.stamp.toSec();
+                double t = imu_msg.timeStamp.toSec();
                 double img_t = img_msg->header.stamp.toSec() + estimator_->td;
                 if (t <= img_t) {
                     if (current_time < 0)
@@ -462,13 +482,8 @@ void VinSystem::process() {
                     double dt = t - current_time;
                     ROS_ASSERT(dt >= 0);
                     current_time = t;
-                    dx = imu_msg->linear_acceleration.x;
-                    dy = imu_msg->linear_acceleration.y;
-                    dz = imu_msg->linear_acceleration.z;
-                    rx = imu_msg->angular_velocity.x;
-                    ry = imu_msg->angular_velocity.y;
-                    rz = imu_msg->angular_velocity.z;
-                    estimator_->processIMU(dt, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+
+                    estimator_->processIMU(dt, imu_msg.measurement.accelerometers, imu_msg.measurement.gyroscopes);
                     //printf("imu: dt:%f a: %f %f %f w: %f %f %f\n",dt, dx, dy, dz, rx, ry, rz);
 
                 } else {
@@ -480,13 +495,8 @@ void VinSystem::process() {
                     ROS_ASSERT(dt_1 + dt_2 > 0);
                     double w1 = dt_2 / (dt_1 + dt_2);
                     double w2 = dt_1 / (dt_1 + dt_2);
-                    dx = w1 * dx + w2 * imu_msg->linear_acceleration.x;
-                    dy = w1 * dy + w2 * imu_msg->linear_acceleration.y;
-                    dz = w1 * dz + w2 * imu_msg->linear_acceleration.z;
-                    rx = w1 * rx + w2 * imu_msg->angular_velocity.x;
-                    ry = w1 * ry + w2 * imu_msg->angular_velocity.y;
-                    rz = w1 * rz + w2 * imu_msg->angular_velocity.z;
-                    estimator_->processIMU(dt_1, Vector3d(dx, dy, dz), Vector3d(rx, ry, rz));
+
+                    estimator_->processIMU(dt_1, imu_msg.measurement.accelerometers, imu_msg.measurement.gyroscopes);
                     //printf("dimu: dt:%f a: %f %f %f w: %f %f %f\n",dt_1, dx, dy, dz, rx, ry, rz);
                 }
             }

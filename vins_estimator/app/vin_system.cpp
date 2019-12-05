@@ -501,12 +501,45 @@ void VinSystem::process() {
             header.frame_id = "world";
             header.stamp = img_msg.timeStamp;
 
-            pubOdometry(*estimator_, header);
-            pubKeyPoses(*estimator_, header);
-            pubCameraPose(*estimator_, header);
-            pubPointCloud(*estimator_, header);
-            pubTF(*estimator_, header);
-            pubKeyframe(*estimator_);
+//            pubOdometry(*estimator_, header);
+//            pubKeyPoses(*estimator_, header);
+//            pubCameraPose(*estimator_, header);
+//            pubPointCloud(*estimator_, header);
+//            pubTF(*estimator_, header);
+//            pubKeyframe(*estimator_);
+
+
+            if (fullStateCallbackWithExtrinsics_ && estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR) {
+
+                std::vector<ros::Time> ts_vec;
+                std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> T_WI_vec;
+                std::vector<Eigen::Matrix<double, 9, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 9, 1>>> sb_vec;
+                std::vector<Eigen::Isometry3d,Eigen::aligned_allocator<Eigen::Isometry3d> > extrinsic_vec;
+
+                for (int i = 0; i <= WINDOW_SIZE; i++)
+                {
+                    ts_vec.push_back(estimator_->Headers[i].stamp);
+                    Eigen::Isometry3d T_WS_i  = Eigen::Isometry3d::Identity();
+                    T_WS_i.translation() = estimator_->Ps[i];
+                    T_WS_i.matrix().topLeftCorner(3,3) = estimator_->Rs[i];
+                    T_WI_vec.push_back(T_WS_i);
+                    Eigen::Matrix<double, 9, 1> sb_i;
+                    sb_i << estimator_->Vs[i] , estimator_->Bas[i], estimator_->Bgs[i];
+                    sb_vec.push_back(sb_i);
+                }
+
+                for (int i = 0 ; i < NUM_OF_CAM; i++) {
+
+                    Matrix3d ric[NUM_OF_CAM];
+                    Vector3d tic[NUM_OF_CAM];
+                    Eigen::Isometry3d T_SC_i  = Eigen::Isometry3d::Identity();
+                    T_SC_i.translation() = estimator_->tic[i];
+                    T_SC_i.matrix().topLeftCorner(3,3) = estimator_->ric[i];
+                    extrinsic_vec.push_back(T_SC_i);
+                }
+
+                fullStateCallbackWithExtrinsics_(ts_vec, T_WI_vec, sb_vec, extrinsic_vec);
+            }
 
         }
         m_estimator.unlock();

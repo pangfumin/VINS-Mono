@@ -25,20 +25,18 @@
     public:
 //        OKVIS_DEFINE_EXCEPTION(Exception,std::runtime_error)
 
-        typedef std::function<
-                void(const ros::Time &, const Eigen::Isometry3d &)> StateCallback;
-        typedef std::function<
-                void(const ros::Time &, const Eigen::Isometry3d &,
-                     const Eigen::Matrix<double, 9, 1> &,
-                     const Eigen::Matrix<double, 3, 1> &)> FullStateCallback;
+//        typedef std::function<
+//                void(const ros::Time &, const Eigen::Isometry3d &)> StateCallback;
+//        typedef std::function<
+//                void(const ros::Time &, const Eigen::Isometry3d &,
+//                     const Eigen::Matrix<double, 9, 1> &,
+//                     const Eigen::Matrix<double, 3, 1> &)> FullStateCallback;
         typedef std::function<
                 void(
-                        const ros::Time &,
-                        const Eigen::Isometry3d &,
-                        const Eigen::Matrix<double, 9, 1> &,
-                        const Eigen::Matrix<double, 3, 1> &,
-                        const std::vector<Eigen::Isometry3d,
-                                Eigen::aligned_allocator<Eigen::Isometry3d> >&)> FullStateCallbackWithExtrinsics;
+                        const std::vector<ros::Time> &,
+                        const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> &,
+                        const std::vector<Eigen::Matrix<double, 9, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 9, 1>>> &,
+                        const std::vector<Eigen::Isometry3d,Eigen::aligned_allocator<Eigen::Isometry3d> >&)> FullStateCallbackWithExtrinsics;
         typedef Eigen::Matrix<unsigned char, Eigen::Dynamic, Eigen::Dynamic> EigenImage;
 //        typedef std::function<
 //                void(const ros::Time &, const okvis::MapPointVector &,
@@ -112,23 +110,6 @@
         /// \name Setters
         /// \{
 
-        /// \brief Set the stateCallback to be called every time a new state is estimated.
-        ///        When an implementing class has an estimate, they can call:
-        ///        stateCallback_( stamp, T_w_vk );
-        ///        where stamp is the timestamp
-        ///        and T_w_vk is the transformation (and uncertainty) that
-        ///        transforms points from the vehicle frame to the world frame
-        virtual void setStateCallback(const StateCallback & stateCallback);
-
-        /// \brief Set the fullStateCallback to be called every time a new state is estimated.
-        ///        When an implementing class has an estimate, they can call:
-        ///        _fullStateCallback( stamp, T_w_vk, speedAndBiases, omega_S);
-        ///        where stamp is the timestamp
-        ///        and T_w_vk is the transformation (and uncertainty) that
-        ///        transforms points from the vehicle frame to the world frame. speedAndBiases contain
-        ///        speed in world frame followed by gyro and acc biases. finally, omega_S is the rotation speed.
-        virtual void setFullStateCallback(
-                const FullStateCallback & fullStateCallback);
 
         /// \brief Set the fullStateCallbackWithExtrinsics to be called every time a new state is estimated.
         ///        When an implementing class has an estimate, they can call:
@@ -169,8 +150,8 @@
         /// \brief Write first line of tracks (data associations) CSV file to describe columns.
         bool writeTracksCsvDescription(size_t cameraId);
 
-        StateCallback stateCallback_; ///< State callback function.
-        FullStateCallback fullStateCallback_; ///< Full state callback function.
+//        StateCallback stateCallback_; ///< State callback function.
+//        FullStateCallback fullStateCallback_; ///< Full state callback function.
         FullStateCallbackWithExtrinsics fullStateCallbackWithExtrinsics_; ///< Full state and extrinsics callback function.
 //        LandmarksCallback landmarksCallback_; ///< Landmarks callback function.
         std::shared_ptr<std::fstream> csvImuFile_;  ///< IMU CSV file.

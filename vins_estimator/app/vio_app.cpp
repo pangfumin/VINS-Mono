@@ -10,6 +10,7 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include "vin_system.h"
+#include "ros_visualization.h"
 
 const string RESET = "\033[0m";
 const string BLACK = "0m";
@@ -61,7 +62,13 @@ int main(int argc, char **argv)
 //    std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";
 
     readTopics(config_file);
+    RosVisualization rosVisualization(n);
+
     VinSystem vinSystem(config_file);
+    vinSystem.setFullStateCallbackWithExtrinsics(
+            std::bind(&RosVisualization::publishFullStateExtrinsicAsCallback, &rosVisualization,
+                      std::placeholders::_1, std::placeholders::_2,
+                      std::placeholders::_3, std::placeholders::_4));
 
 
 

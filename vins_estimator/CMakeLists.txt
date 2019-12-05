@@ -53,6 +53,7 @@ cs_add_executable(vio_app
         app/vio_app.cpp
         app/vio_interface.cpp
         app/vin_system.cpp
+        app/ros_visualization.cpp
         )
 target_link_libraries(vio_app ${PROJECT_NAME}_lib)
 

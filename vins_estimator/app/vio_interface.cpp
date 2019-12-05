@@ -26,16 +26,7 @@
 
 
 
-// Set the callback to be called every time a new state is estimated.
-    void VioInterface::setStateCallback(const StateCallback & stateCallback) {
-        stateCallback_ = stateCallback;
-    }
 
-// Set the fullStateCallback to be called every time a new state is estimated.
-    void VioInterface::setFullStateCallback(
-            const FullStateCallback & fullStateCallback) {
-        fullStateCallback_ = fullStateCallback;
-    }
 
 // Set the callback to be called every time a new state is estimated.
     void VioInterface::setFullStateCallbackWithExtrinsics(

@@ -81,12 +81,12 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
     if (img_msg.timeStamp.toSec() - last_image_time > 1.0 || img_msg.timeStamp.toSec() < last_image_time)
     {
         ROS_WARN("image discontinue! reset the feature tracker!");
-        first_image_flag = true;
-        last_image_time = 0;
-        pub_count = 1;
-        std_msgs::Bool restart_flag;
-        restart_flag.data = true;
-        pub_restart.publish(restart_flag);
+//        first_image_flag = true;
+//        last_image_time = 0;
+//        pub_count = 1;
+//        std_msgs::Bool restart_flag;
+//        restart_flag.data = true;
+//        pub_restart.publish(restart_flag);
         return;
     }
     last_image_time = img_msg.timeStamp.toSec();
@@ -104,21 +104,7 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
     else
         feature_track::PUB_THIS_FRAME = false;
 
-//    cv_bridge::CvImageConstPtr ptr;
-//    if (img_msg.encoding == "8UC1")
-//    {
-//        sensor_msgs::Image img;
-//        img.header = img_msg.header;
-//        img.height = img_msg.height;
-//        img.width = img_msg.width;
-//        img.is_bigendian = img_msg.is_bigendian;
-//        img.step = img_msg.step;
-//        img.data = img_msg.data;
-//        img.encoding = "mono8";
-//        ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
-//    }
-//    else
-//        ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
+
 
     cv::Mat show_img = img_msg.measurement.image.clone();
     // feature_track::TicToc t_r;
@@ -247,11 +233,10 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
             }
             //cv::imshow("vis", stereo_img);
             //cv::waitKey(5);
-            cv_bridge::CvImage out_msg;
-            out_msg.header.stamp = img_msg.timeStamp;// Same timestamp and tf frame as input image
-            out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; // Or whatever
-            out_msg.image    = stereo_img; // Your cv::Mat
-            pub_match.publish(out_msg.toImageMsg());
+
+            if (featureTrackImageCallback_) {
+                featureTrackImageCallback_(img_msg.timeStamp, stereo_img);
+            }
         }
     }
     // ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
@@ -530,8 +515,6 @@ void VinSystem::process() {
 
                 for (int i = 0 ; i < NUM_OF_CAM; i++) {
 
-                    Matrix3d ric[NUM_OF_CAM];
-                    Vector3d tic[NUM_OF_CAM];
                     Eigen::Isometry3d T_SC_i  = Eigen::Isometry3d::Identity();
                     T_SC_i.translation() = estimator_->tic[i];
                     T_SC_i.matrix().topLeftCorner(3,3) = estimator_->ric[i];

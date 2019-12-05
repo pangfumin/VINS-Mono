@@ -34,6 +34,11 @@
         fullStateCallbackWithExtrinsics_ = fullStateCallbackWithExtrinsics;
     }
 
+    void VioInterface::setFeatureTrackImageCallback(
+        const FeatureTrackImageCallback & featureTrackImageCallback) {
+        featureTrackImageCallback_ = featureTrackImageCallback;
+}
+
 // Set the fullStateCallbackWithExtrinsics to be called every time a new state is estimated.
 //    void VioInterface::setLandmarksCallback(
 //            const LandmarksCallback & landmarksCallback) {

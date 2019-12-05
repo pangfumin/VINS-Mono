@@ -9,6 +9,10 @@
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <rosbag/chunked_file.h>
+#include <sensor_msgs/Imu.h>
 #include "vin_system.h"
 #include "ros_visualization.h"
 
@@ -69,6 +73,9 @@ int main(int argc, char **argv)
             std::bind(&RosVisualization::publishFullStateExtrinsicAsCallback, &rosVisualization,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3, std::placeholders::_4));
+    vinSystem.setFeatureTrackImageCallback(
+            std::bind(&RosVisualization::publishFeatureTrackImageAsCallback, &rosVisualization,
+                      std::placeholders::_1, std::placeholders::_2));
 
 
 
@@ -78,7 +85,6 @@ int main(int argc, char **argv)
     ROS_WARN("waiting for image and imu...");
 
     registerPub(n);
-    vinSystem.pub_match = n.advertise<sensor_msgs::Image>("feature_img",1000);
 
 
     rosbag::Bag bag;

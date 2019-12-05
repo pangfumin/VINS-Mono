@@ -42,6 +42,9 @@
 //                void(const ros::Time &, const okvis::MapPointVector &,
 //                     const okvis::MapPointVector &)> LandmarksCallback;
 
+    typedef std::function<
+                void(const ros::Time &, const cv::Mat &)> FeatureTrackImageCallback;
+
         VioInterface();
         virtual ~VioInterface();
 
@@ -131,6 +134,9 @@
 //        virtual void setLandmarksCallback(
 //                const LandmarksCallback & landmarksCallback);
 
+        virtual void setFeatureTrackImageCallback(
+                const FeatureTrackImageCallback & featureTrackImageCallback);
+
         /**
          * \brief Set the blocking variable that indicates whether the addMeasurement() functions
          *        should return immediately (blocking=false), or only when the processing is complete.
@@ -153,6 +159,7 @@
 //        StateCallback stateCallback_; ///< State callback function.
 //        FullStateCallback fullStateCallback_; ///< Full state callback function.
         FullStateCallbackWithExtrinsics fullStateCallbackWithExtrinsics_; ///< Full state and extrinsics callback function.
+        FeatureTrackImageCallback featureTrackImageCallback_;
 //        LandmarksCallback landmarksCallback_; ///< Landmarks callback function.
         std::shared_ptr<std::fstream> csvImuFile_;  ///< IMU CSV file.
         std::shared_ptr<std::fstream> csvPosFile_;  ///< Position CSV File.

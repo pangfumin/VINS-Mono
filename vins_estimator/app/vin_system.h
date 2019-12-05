@@ -12,22 +12,17 @@
 #include <mutex>
 #include <condition_variable>
 #include <ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 
 
-#include <rosbag/bag.h>
-#include <rosbag/view.h>
-#include <rosbag/chunked_file.h>
+
 #include "vio_interface.h"
 #include "types.h"
 
 #include "vins_estimator/utility/visualization.h"
 
-#include <sensor_msgs/Image.h>
-#include <sensor_msgs/image_encodings.h>
-#include <sensor_msgs/PointCloud.h>
-#include <sensor_msgs/Imu.h>
+
+
 #include <std_msgs/Bool.h>
 
 
@@ -58,8 +53,8 @@ public:
 
 
     void shutdown();
-    ros::Publisher pub_match;
-    ros::Publisher pub_restart;
+//    ros::Publisher pub_match;
+//    ros::Publisher pub_restart;
 
 private:
     void feature_callback(const PointCloudMeasurement &feature_msg);

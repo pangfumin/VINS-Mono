@@ -23,6 +23,7 @@
 //#include "../estimator.h"
 //#include "../parameters.h"
 #include <fstream>
+#include <opencv2/core/core.hpp>
 
 class RosVisualization {
 public:
@@ -34,6 +35,10 @@ public:
         const std::vector<Eigen::Matrix<double, 9, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 9, 1>>> & sb_vec,
         const std::vector<Eigen::Isometry3d,Eigen::aligned_allocator<Eigen::Isometry3d> >& extrinsic_vec);
 
+    void publishFeatureTrackImageAsCallback(
+            const ros::Time ts,
+            const cv::Mat image
+            );
 
 private:
     void pubCameraPose(
@@ -60,6 +65,7 @@ private:
     ros::Publisher pub_camera_pose_;
     ros::Publisher pub_camera_pose_visual_;
     ros::Publisher pub_extrinsic_;
+    ros::Publisher pub_match_;
 
     nav_msgs::Path relo_path_;
 

@@ -3,6 +3,7 @@
 //
 
 #include "ros_visualization.h"
+#include <cv_bridge/cv_bridge.h>
 
 RosVisualization::RosVisualization(ros::NodeHandle &n):
         cameraposevisual_(0, 1, 0, 1),
@@ -21,6 +22,9 @@ RosVisualization::RosVisualization(ros::NodeHandle &n):
     pub_extrinsic_ = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
 //    pub_relo_relative_pose_ =  n.advertise<nav_msgs::Odometry>("relo_relative_pose", 1000);
 
+    pub_match_ = n.advertise<sensor_msgs::Image>("feature_img",1000);
+
+
     cameraposevisual_.setScale(1);
     cameraposevisual_.setLineWidth(0.05);
     keyframebasevisual_.setScale(0.1);
@@ -32,16 +36,25 @@ void RosVisualization::publishFullStateExtrinsicAsCallback(
         const std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> & T_WS_vec,
         const std::vector<Eigen::Matrix<double, 9, 1>, Eigen::aligned_allocator<Eigen::Matrix<double, 9, 1>>> & sb_vec,
 const std::vector<Eigen::Isometry3d,Eigen::aligned_allocator<Eigen::Isometry3d> >& extrinsic_vec) {
-    std::cout << "fullStateWithExtrinsicsCallback: " << ts_vec.size() << std::endl;
     std_msgs::Header header, header1;
     header.stamp = ts_vec[ts_vec.size() - 1];
     header1.stamp = ts_vec.back();
-
 
     pubCameraPose(T_WS_vec[T_WS_vec.size() - 1], extrinsic_vec[0], header);
     pubOdometry(T_WS_vec.back(), sb_vec.back().head<3>(), header1);
     pubTF(T_WS_vec.back(), extrinsic_vec.back(), header1);
 
+}
+
+void RosVisualization::publishFeatureTrackImageAsCallback(
+        const ros::Time ts,
+        const cv::Mat image
+) {
+    cv_bridge::CvImage out_msg;
+    out_msg.header.stamp = ts;// Same timestamp and tf frame as input image
+    out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; // Or whatever
+    out_msg.image    = image; // Your cv::Mat
+    pub_match_.publish(out_msg.toImageMsg());
 }
 
 

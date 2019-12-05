@@ -44,6 +44,10 @@ private:
             const Eigen::Vector3d v,
             const std_msgs::Header &header);
 
+    void pubTF(const Eigen::Isometry3d &T_WS,
+                                 const Eigen::Isometry3d T_IC,
+                                 const std_msgs::Header &header);
+
     ros::Publisher pub_odometry_;
     ros::Publisher pub_path_, pub_pose_;
     ros::Publisher pub_cloud_, pub_map_;
@@ -55,6 +59,7 @@ private:
     int IMAGE_ROW_, IMAGE_COL_;
     ros::Publisher pub_camera_pose_;
     ros::Publisher pub_camera_pose_visual_;
+    ros::Publisher pub_extrinsic_;
 
     nav_msgs::Path relo_path_;
 

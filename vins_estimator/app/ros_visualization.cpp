@@ -18,7 +18,7 @@ RosVisualization::RosVisualization(ros::NodeHandle &n):
     pub_camera_pose_visual_ = n.advertise<visualization_msgs::MarkerArray>("camera_pose_visual", 1000);
 //    pub_keyframe_pose_ = n.advertise<nav_msgs::Odometry>("keyframe_pose", 1000);
 //    pub_keyframe_point_ = n.advertise<sensor_msgs::PointCloud>("keyframe_point", 1000);
-//    pub_extrinsic_ = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
+    pub_extrinsic_ = n.advertise<nav_msgs::Odometry>("extrinsic", 1000);
 //    pub_relo_relative_pose_ =  n.advertise<nav_msgs::Odometry>("relo_relative_pose", 1000);
 
     cameraposevisual_.setScale(1);
@@ -35,10 +35,12 @@ const std::vector<Eigen::Isometry3d,Eigen::aligned_allocator<Eigen::Isometry3d> 
     std::cout << "fullStateWithExtrinsicsCallback: " << ts_vec.size() << std::endl;
     std_msgs::Header header, header1;
     header.stamp = ts_vec[ts_vec.size() - 1];
-    pubCameraPose(T_WS_vec[T_WS_vec.size() - 1], extrinsic_vec[0], header);
-
     header1.stamp = ts_vec.back();
+
+
+    pubCameraPose(T_WS_vec[T_WS_vec.size() - 1], extrinsic_vec[0], header);
     pubOdometry(T_WS_vec.back(), sb_vec.back().head<3>(), header1);
+    pubTF(T_WS_vec.back(), extrinsic_vec.back(), header1);
 
 }
 
@@ -126,5 +128,62 @@ void RosVisualization::pubOdometry(const Eigen::Isometry3d T_WS, const Eigen::Ve
 //        relo_path.poses.push_back(pose_stamped);
 //        pub_relo_path.publish(relo_path);
 }
+
+
+void RosVisualization::pubTF(const Eigen::Isometry3d &T_WS,
+                             const Eigen::Isometry3d T_IC,
+                             const std_msgs::Header &header)
+{
+
+    static tf::TransformBroadcaster br;
+    tf::Transform transform;
+    tf::Quaternion q;
+    // body frame
+    Eigen::Vector3d correct_t = T_WS.translation();
+    Eigen::Matrix3d  correct_R = T_WS.matrix().topLeftCorner(3,3);
+    Eigen::Quaterniond correct_q(correct_R);
+
+    Eigen::Vector3d t_IC = T_IC.translation();
+    Eigen::Matrix3d  R_IC = T_IC.matrix().topLeftCorner(3,3);
+    Eigen::Quaterniond q_IC(R_IC);
+
+
+
+    transform.setOrigin(tf::Vector3(correct_t(0),
+                                    correct_t(1),
+                                    correct_t(2)));
+    q.setW(correct_q.w());
+    q.setX(correct_q.x());
+    q.setY(correct_q.y());
+    q.setZ(correct_q.z());
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, header.stamp, "world", "body"));
+
+    // camera frame
+    transform.setOrigin(tf::Vector3(t_IC.x(),
+                                    t_IC.y(),
+                                    t_IC.z()));
+    q.setW(q_IC.w());
+    q.setX(q_IC.x());
+    q.setY(q_IC.y());
+    q.setZ(q_IC.z());
+    transform.setRotation(q);
+    br.sendTransform(tf::StampedTransform(transform, header.stamp, "body", "camera"));
+
+    nav_msgs::Odometry odometry;
+    odometry.header = header;
+    odometry.header.frame_id = "world";
+    odometry.pose.pose.position.x = t_IC.x();
+    odometry.pose.pose.position.y = t_IC.y();
+    odometry.pose.pose.position.z = t_IC.z();
+//    Eigen::Quaterniond tmp_q{estimator.ric[0]};
+    odometry.pose.pose.orientation.x = q_IC.x();
+    odometry.pose.pose.orientation.y = q_IC.y();
+    odometry.pose.pose.orientation.z = q_IC.z();
+    odometry.pose.pose.orientation.w = q_IC.w();
+    pub_extrinsic_.publish(odometry);
+
+}
+
 
 

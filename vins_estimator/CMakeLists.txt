@@ -36,7 +36,7 @@ cs_add_library(${PROJECT_NAME}_lib
         src/factor/projection_td_factor.cpp
         src/factor/marginalization_factor.cpp
         src/utility/utility.cpp
-        src/utility/visualization.cpp
+#        src/utility/visualization.cpp
         src/utility/CameraPoseVisualization.cpp
         src/initial/solve_5pts.cpp
         src/initial/initial_aligment.cpp

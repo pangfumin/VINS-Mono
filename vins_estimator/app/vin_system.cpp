@@ -287,7 +287,7 @@ void VinSystem::update()
     gyr_0 = estimator_->gyr_0;
 
     queue<ImuMeasurement> tmp_imu_buf = imu_buf;
-    for (sensor_msgs::ImuConstPtr tmp_imu_msg; !tmp_imu_buf.empty(); tmp_imu_buf.pop())
+    for (; !tmp_imu_buf.empty(); tmp_imu_buf.pop())
         predict(tmp_imu_buf.front());
 
 }
@@ -374,8 +374,8 @@ bool VinSystem::addImuMeasurement(const ros::Time & stamp,
         std_msgs::Header header;
         header.stamp = stamp;
         header.frame_id = "world";
-        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
-            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
+//        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
+//            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
     }
     return true;
 }
@@ -383,27 +383,27 @@ bool VinSystem::addImuMeasurement(const ros::Time & stamp,
 
 
 
-
-void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
-{
-    if (restart_msg->data == true)
-    {
-        ROS_WARN("restart the estimator!");
-        m_buf.lock();
-        while(!feature_buf.empty())
-            feature_buf.pop();
-        while(!imu_buf.empty())
-            imu_buf.pop();
-        m_buf.unlock();
-        m_estimator.lock();
-        estimator_->clearState();
-        estimator_->setParameter();
-        m_estimator.unlock();
-        current_time = -1;
-        last_imu_t = 0;
-    }
-    return;
-}
+//
+//void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
+//{
+//    if (restart_msg->data == true)
+//    {
+//        ROS_WARN("restart the estimator!");
+//        m_buf.lock();
+//        while(!feature_buf.empty())
+//            feature_buf.pop();
+//        while(!imu_buf.empty())
+//            imu_buf.pop();
+//        m_buf.unlock();
+//        m_estimator.lock();
+//        estimator_->clearState();
+//        estimator_->setParameter();
+//        m_estimator.unlock();
+//        current_time = -1;
+//        last_imu_t = 0;
+//    }
+//    return;
+//}
 
 
 
@@ -481,11 +481,12 @@ void VinSystem::process() {
             estimator_->processImage(image, header1);
 
             double whole_t = t_s.toc();
-            printStatistics(*estimator_, whole_t);
+            //printStatistics(*estimator_, whole_t);
             std_msgs::Header header ;
             header.frame_id = "world";
             header.stamp = img_msg.timeStamp;
 
+            // todo(pang)
 //            pubOdometry(*estimator_, header);
 //            pubKeyPoses(*estimator_, header);
 //            pubCameraPose(*estimator_, header);

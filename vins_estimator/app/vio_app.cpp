@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <queue>
 #include <map>
+#include <string>
 
 #include <ros/ros.h>
 #include <cv_bridge/cv_bridge.h>
@@ -16,14 +17,14 @@
 #include "vin_system.h"
 #include "ros_visualization.h"
 
-const string RESET = "\033[0m";
-const string BLACK = "0m";
-const string RED = "1m";
-const string GREEN = "2m";
-const string BOLD = "\033[1;3";
-const string REGULAR = "\033[0;3";
-const string UNDERLINE = "\033[4;3";
-const string BACKGROUND = "\033[4";
+const std::string RESET = "\033[0m";
+const std::string BLACK = "0m";
+const std::string RED = "1m";
+const std::string GREEN = "2m";
+const std::string BOLD = "\033[1;3";
+const std::string REGULAR = "\033[0;3";
+const std::string UNDERLINE = "\033[4;3";
+const std::string BACKGROUND = "\033[4";
 
 std::string colouredString(std::string str, std::string colour, std::string option)
 {
@@ -84,25 +85,25 @@ int main(int argc, char **argv)
 #endif
     ROS_WARN("waiting for image and imu...");
 
-    registerPub(n);
+//    registerPub(n);
 
 
     rosbag::Bag bag;
-    cout << colouredString("\tOpening bag...", RED, REGULAR);
+    std::cout << colouredString("\tOpening bag...", RED, REGULAR);
     bag.open(rosbag_file, rosbag::bagmode::Read);
-    cout << colouredString("\t[DONE!]", GREEN, REGULAR) << endl;
+    std::cout << colouredString("\t[DONE!]", GREEN, REGULAR) << std::endl;
 
-    cout << colouredString("\tQuering topics bag...", RED, REGULAR);
+    std::cout << colouredString("\tQuering topics bag...", RED, REGULAR);
 
-    vector < string > topic_list;
+    std::vector < std::string > topic_list;
 
     rosbag::View view(bag);
 
-    vector<const rosbag::ConnectionInfo *> bag_info = view.getConnections();
-    std::set < string > bag_topics;
+    std::vector<const rosbag::ConnectionInfo *> bag_info = view.getConnections();
+    std::set < std::string > bag_topics;
 
     for (const rosbag::ConnectionInfo *info : bag_info) {
-        string topic_name;
+        std::string topic_name;
         topic_name = info->topic;
 
         std::cout << "topic: " << topic_name << std::endl;
@@ -118,7 +119,7 @@ int main(int argc, char **argv)
     for (auto bagIt : view ) {
         //if (!ros::ok()) break;
 
-        string topic = bagIt.getTopic();
+        std::string topic = bagIt.getTopic();
 
         if (topic == IMU_TOPIC) {
             sensor_msgs::Imu::ConstPtr imu =

@@ -8,22 +8,17 @@
 #include <stdio.h>
 #include <queue>
 #include <map>
+#include <queue>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 
-
-
 #include "vio_interface.h"
 #include "types.h"
 
-#include "vins_estimator/utility/visualization.h"
-
-
-
-#include <std_msgs/Bool.h>
+//#include <std_msgs/Bool.h>
 
 
 
@@ -64,7 +59,7 @@ private:
     std::vector<std::pair<std::vector<ImuMeasurement>, PointCloudMeasurement>>
     getMeasurements();
 
-    void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
+//    void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
     void process();
     void processImageLoop();
     void processRawImage(const CameraMeasurement &img_msg);
@@ -72,8 +67,8 @@ private:
     std::shared_ptr<Estimator> estimator_;
     std::condition_variable con;
     double current_time = -1;
-    queue<ImuMeasurement> imu_buf;
-    queue<PointCloudMeasurement> feature_buf;
+    std::queue<ImuMeasurement> imu_buf;
+    std::queue<PointCloudMeasurement> feature_buf;
     std::mutex m_image_mutex;
 
     std::deque<CameraMeasurement> m_image_buffer;

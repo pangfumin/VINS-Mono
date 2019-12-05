@@ -19,6 +19,8 @@
 #include <rosbag/bag.h>
 #include <rosbag/view.h>
 #include <rosbag/chunked_file.h>
+#include "vio_interface.h"
+#include "types.h"
 
 #include "vins_estimator/utility/visualization.h"
 
@@ -38,12 +40,23 @@ namespace feature_track {
 
 
 
-class VinSystem {
+class VinSystem : public VioInterface{
 public:
     VinSystem(const std::string config_file);
-    ~VinSystem();
+    virtual ~VinSystem();
     void imu_callback(const sensor_msgs::ImuConstPtr imu_msg);
-    void img_callback(const sensor_msgs::ImageConstPtr img_msg);
+//    void img_callback(const sensor_msgs::ImageConstPtr img_msg);
+
+    bool addImage(const ros::Time & stamp, size_t cameraIndex,
+                          const cv::Mat & image,
+                          const std::vector<cv::KeyPoint> * keypoints = 0,
+                          bool* asKeyframe = 0);
+
+    bool addImuMeasurement(const ros::Time & stamp,
+                                   const Eigen::Vector3d & alpha,
+                                   const Eigen::Vector3d & omega) ;
+
+
 
     void shutdown();
     ros::Publisher pub_match;
@@ -60,7 +73,7 @@ private:
     void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
     void process();
     void processImageLoop();
-    void processRawImage(const sensor_msgs::Image &img_msg);
+    void processRawImage(const CameraMeasurement &img_msg);
 
     std::shared_ptr<Estimator> estimator_;
     std::condition_variable con;
@@ -69,7 +82,7 @@ private:
     queue<sensor_msgs::PointCloudConstPtr> feature_buf;
     std::mutex m_image_mutex;
 
-    std::deque<sensor_msgs::Image> m_image_buffer;
+    std::deque<CameraMeasurement> m_image_buffer;
 
     int sum_of_wait = 0;
 

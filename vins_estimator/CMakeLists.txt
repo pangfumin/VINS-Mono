@@ -49,7 +49,10 @@ cs_add_library(${PROJECT_NAME}_lib
 #######
 # APP #
 #######
-cs_add_executable(vio_app app/vio_app.cpp app/vin_system.cpp
+cs_add_executable(vio_app
+        app/vio_app.cpp
+        app/vio_interface.cpp
+        app/vin_system.cpp
         )
 target_link_libraries(vio_app ${PROJECT_NAME}_lib)
 

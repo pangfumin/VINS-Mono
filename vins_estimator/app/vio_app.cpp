@@ -124,16 +124,18 @@ int main(int argc, char **argv)
 
 
             if (lastImageTs < image->header.stamp.toNSec()) {
-                vinSystem.img_callback(image);
+                cv_bridge::CvImagePtr cv_ptr;
+                cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::MONO8);
+                cv::Mat image_cv = cv_ptr->image;
+                image_cv.convertTo(image_cv, CV_8UC1);
+                vinSystem.addImage(image->header.stamp, 0, image_cv);
                 lastImageTs = image->header.stamp.toNSec();
             }
 
 //            if (image_cnt ++ > 500) break;
 
 
-//            cv_bridge::CvImagePtr cv_ptr;
-//            cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::BGR8);
-//            cv::Mat image_cv = cv_ptr->image;
+
 //
 //            cv::imshow("image", image_cv);
             cv::waitKey(20);

@@ -67,22 +67,22 @@ void VinSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &feature_
     con.notify_one();
 }
 
-void VinSystem::img_callback(const sensor_msgs::ImageConstPtr img_msg) {
-    m_image_mutex.lock();
-    m_image_buffer.push_back(*img_msg);
-    m_image_mutex.unlock();
-}
-void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
+//void VinSystem::img_callback(const sensor_msgs::ImageConstPtr img_msg) {
+//    m_image_mutex.lock();
+//    m_image_buffer.push_back(*img_msg);
+//    m_image_mutex.unlock();
+//}
+void VinSystem::processRawImage(const CameraMeasurement &img_msg)
 {
     if(first_image_flag)
     {
         first_image_flag = false;
-        first_image_time = img_msg.header.stamp.toSec();
-        last_image_time = img_msg.header.stamp.toSec();
+        first_image_time = img_msg.timeStamp.toSec();
+        last_image_time = img_msg.timeStamp.toSec();
         return;
     }
     // detect unstable camera stream
-    if (img_msg.header.stamp.toSec() - last_image_time > 1.0 || img_msg.header.stamp.toSec() < last_image_time)
+    if (img_msg.timeStamp.toSec() - last_image_time > 1.0 || img_msg.timeStamp.toSec() < last_image_time)
     {
         ROS_WARN("image discontinue! reset the feature tracker!");
         first_image_flag = true;
@@ -93,54 +93,54 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
         pub_restart.publish(restart_flag);
         return;
     }
-    last_image_time = img_msg.header.stamp.toSec();
+    last_image_time = img_msg.timeStamp.toSec();
     // frequency control
-    if (round(1.0 * pub_count / (img_msg.header.stamp.toSec() - first_image_time)) <= feature_track::FREQ)
+    if (round(1.0 * pub_count / (img_msg.timeStamp.toSec() - first_image_time)) <= feature_track::FREQ)
     {
         feature_track::PUB_THIS_FRAME = true;
         // reset the frequency control
-        if (abs(1.0 * pub_count / (img_msg.header.stamp.toSec() - first_image_time) - feature_track::FREQ) < 0.01 * feature_track::FREQ)
+        if (abs(1.0 * pub_count / (img_msg.timeStamp.toSec() - first_image_time) - feature_track::FREQ) < 0.01 * feature_track::FREQ)
         {
-            first_image_time = img_msg.header.stamp.toSec();
+            first_image_time = img_msg.timeStamp.toSec();
             pub_count = 0;
         }
     }
     else
         feature_track::PUB_THIS_FRAME = false;
 
-    cv_bridge::CvImageConstPtr ptr;
-    if (img_msg.encoding == "8UC1")
-    {
-        sensor_msgs::Image img;
-        img.header = img_msg.header;
-        img.height = img_msg.height;
-        img.width = img_msg.width;
-        img.is_bigendian = img_msg.is_bigendian;
-        img.step = img_msg.step;
-        img.data = img_msg.data;
-        img.encoding = "mono8";
-        ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
-    }
-    else
-        ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
+//    cv_bridge::CvImageConstPtr ptr;
+//    if (img_msg.encoding == "8UC1")
+//    {
+//        sensor_msgs::Image img;
+//        img.header = img_msg.header;
+//        img.height = img_msg.height;
+//        img.width = img_msg.width;
+//        img.is_bigendian = img_msg.is_bigendian;
+//        img.step = img_msg.step;
+//        img.data = img_msg.data;
+//        img.encoding = "mono8";
+//        ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::MONO8);
+//    }
+//    else
+//        ptr = cv_bridge::toCvCopy(img_msg, sensor_msgs::image_encodings::MONO8);
 
-    cv::Mat show_img = ptr->image;
+    cv::Mat show_img = img_msg.measurement.image.clone();
     // feature_track::TicToc t_r;
     for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
     {
         ROS_DEBUG("processing camera %d", i);
         if (i != 1 || !feature_track::STEREO_TRACK)
-            trackerData_[i]->readImage(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
-                                     img_msg.header.stamp.toSec());
+            trackerData_[i]->readImage(img_msg.measurement.image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)),
+                                     img_msg.timeStamp.toSec());
         else
         {
             if (feature_track::EQUALIZE)
             {
                 cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-                clahe->apply(ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)), trackerData_[i]->cur_img);
+                clahe->apply(img_msg.measurement.image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1)), trackerData_[i]->cur_img);
             }
             else
-                trackerData_[i]->cur_img = ptr->image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1));
+                trackerData_[i]->cur_img = img_msg.measurement.image.rowRange(feature_track::ROW * i, feature_track::ROW * (i + 1));
         }
 
 #if SHOW_UNDISTORTION
@@ -168,8 +168,10 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
         sensor_msgs::ChannelFloat32 velocity_x_of_point;
         sensor_msgs::ChannelFloat32 velocity_y_of_point;
 
-        feature_points->header = img_msg.header;
+
+//        feature_points->header = img_msg.header;
         feature_points->header.frame_id = "world";
+        feature_points->header.stamp = img_msg.timeStamp;
 
         vector<set<int>> hash_ids(feature_track::NUM_OF_CAM);
         for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
@@ -217,9 +219,10 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
 
         if (feature_track::SHOW_TRACK)
         {
-            ptr = cv_bridge::cvtColor(ptr, sensor_msgs::image_encodings::BGR8);
-            //cv::Mat stereo_img(ROW * NUM_OF_CAM, COL, CV_8UC3);
-            cv::Mat stereo_img = ptr->image;
+            //ptr = cv_bridge::cvtColor(ptr, sensor_msgs::image_encodings::BGR8);
+            cv::Mat stereo_img(ROW * NUM_OF_CAM, COL, CV_8UC3);
+            //cv::Mat stereo_img = img_msg.measurement.image.clone();
+            cv::cvtColor(img_msg.measurement.image, stereo_img, CV_GRAY2RGB);
 
             for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
             {
@@ -248,7 +251,11 @@ void VinSystem::processRawImage(const sensor_msgs::Image &img_msg)
             }
             //cv::imshow("vis", stereo_img);
             //cv::waitKey(5);
-            pub_match.publish(ptr->toImageMsg());
+            cv_bridge::CvImage out_msg;
+            out_msg.header.stamp = img_msg.timeStamp;// Same timestamp and tf frame as input image
+            out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3; // Or whatever
+            out_msg.image    = stereo_img; // Your cv::Mat
+            pub_match.publish(out_msg.toImageMsg());
         }
     }
     // ROS_INFO("whole feature tracker processing costs: %f", t_r.toc());
@@ -376,6 +383,27 @@ void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
             pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
     }
 }
+
+bool VinSystem::addImage(const ros::Time & stamp, size_t cameraIndex,
+                      const cv::Mat & image,
+                      const std::vector<cv::KeyPoint> * keypoints,
+                      bool* asKeyframe) {
+    CameraMeasurement cam_meas;
+    cam_meas.timeStamp = stamp;
+    cam_meas.measurement.image = image;
+    m_image_mutex.lock();
+    m_image_buffer.push_back(cam_meas);
+    m_image_mutex.unlock();
+
+    return true;
+}
+
+bool VinSystem::addImuMeasurement(const ros::Time & stamp,
+                               const Eigen::Vector3d & alpha,
+                               const Eigen::Vector3d & omega)  {
+    return true;
+}
+
 
 
 
@@ -521,7 +549,7 @@ void VinSystem::processImageLoop() {
         m_image_mutex.lock();
         int  pop_cnt = 0;
 
-        sensor_msgs::Image im;
+        CameraMeasurement im;
         if (m_image_buffer.size() > 0) {
             //ALOGI("NinebotSlam: m_image_buffer size : %d", m_image_buffer.size());
             im = m_image_buffer.front();
@@ -532,7 +560,6 @@ void VinSystem::processImageLoop() {
 
         if (hasNewImage) {
             processRawImage(im);
-
 
             if (cnt ++ > 50 ) {
 #if defined(ANDROID) || defined(__ANDROID__)

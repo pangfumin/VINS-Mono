@@ -53,7 +53,7 @@ VinSystem::~VinSystem() {
 }
 
 
-void VinSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg)
+void VinSystem::feature_callback(const PointCloudMeasurement &feature_msg)
 {
     if (!init_feature)
     {
@@ -67,11 +67,7 @@ void VinSystem::feature_callback(const sensor_msgs::PointCloudConstPtr &feature_
     con.notify_one();
 }
 
-//void VinSystem::img_callback(const sensor_msgs::ImageConstPtr img_msg) {
-//    m_image_mutex.lock();
-//    m_image_buffer.push_back(*img_msg);
-//    m_image_mutex.unlock();
-//}
+
 void VinSystem::processRawImage(const CameraMeasurement &img_msg)
 {
     if(first_image_flag)
@@ -161,17 +157,17 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
     if (feature_track::PUB_THIS_FRAME)
     {
         pub_count++;
-        sensor_msgs::PointCloudPtr feature_points(new sensor_msgs::PointCloud);
-        sensor_msgs::ChannelFloat32 id_of_point;
-        sensor_msgs::ChannelFloat32 u_of_point;
-        sensor_msgs::ChannelFloat32 v_of_point;
-        sensor_msgs::ChannelFloat32 velocity_x_of_point;
-        sensor_msgs::ChannelFloat32 velocity_y_of_point;
+        PointCloudMeasurement feature_points;
+        ChannelFloat32 id_of_point;
+        ChannelFloat32 u_of_point;
+        ChannelFloat32 v_of_point;
+        ChannelFloat32 velocity_x_of_point;
+        ChannelFloat32 velocity_y_of_point;
 
 
 //        feature_points->header = img_msg.header;
-        feature_points->header.frame_id = "world";
-        feature_points->header.stamp = img_msg.timeStamp;
+//        feature_points->header.frame_id = "world";
+        feature_points.timeStamp = img_msg.timeStamp;
 
         vector<set<int>> hash_ids(feature_track::NUM_OF_CAM);
         for (int i = 0; i < feature_track::NUM_OF_CAM; i++)
@@ -186,26 +182,26 @@ void VinSystem::processRawImage(const CameraMeasurement &img_msg)
                 {
                     int p_id = ids[j];
                     hash_ids[i].insert(p_id);
-                    geometry_msgs::Point32 p;
-                    p.x = un_pts[j].x;
-                    p.y = un_pts[j].y;
-                    p.z = 1;
+                    Eigen::Vector3d p;
+                    p.x() = un_pts[j].x;
+                    p.y() = un_pts[j].y;
+                    p.z() = 1;
 
-                    feature_points->points.push_back(p);
-                    id_of_point.values.push_back(p_id * feature_track::NUM_OF_CAM + i);
-                    u_of_point.values.push_back(cur_pts[j].x);
-                    v_of_point.values.push_back(cur_pts[j].y);
-                    velocity_x_of_point.values.push_back(pts_velocity[j].x);
-                    velocity_y_of_point.values.push_back(pts_velocity[j].y);
+                    feature_points.measurement.points.push_back(p);
+                    id_of_point.push_back(p_id * feature_track::NUM_OF_CAM + i);
+                    u_of_point.push_back(cur_pts[j].x);
+                    v_of_point.push_back(cur_pts[j].y);
+                    velocity_x_of_point.push_back(pts_velocity[j].x);
+                    velocity_y_of_point.push_back(pts_velocity[j].y);
                 }
             }
         }
-        feature_points->channels.push_back(id_of_point);
-        feature_points->channels.push_back(u_of_point);
-        feature_points->channels.push_back(v_of_point);
-        feature_points->channels.push_back(velocity_x_of_point);
-        feature_points->channels.push_back(velocity_y_of_point);
-        ROS_DEBUG("publish %f, at %f", feature_points->header.stamp.toSec(), ros::Time::now().toSec());
+        feature_points.measurement.channels.push_back(id_of_point);
+        feature_points.measurement.channels.push_back(u_of_point);
+        feature_points.measurement.channels.push_back(v_of_point);
+        feature_points.measurement.channels.push_back(velocity_x_of_point);
+        feature_points.measurement.channels.push_back(velocity_y_of_point);
+        ROS_DEBUG("publish %f, at %f", feature_points.timeStamp.toSec(), ros::Time::now().toSec());
         // skip the first image; since no optical speed on frist image
         if (!init_pub)
         {
@@ -311,34 +307,34 @@ void VinSystem::update()
 
 }
 
-std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>>
+std::vector<std::pair<std::vector<ImuMeasurement>, PointCloudMeasurement>>
 VinSystem::getMeasurements()
 {
-    std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>> measurements;
+    std::vector<std::pair<std::vector<ImuMeasurement>, PointCloudMeasurement>> measurements;
 
     while (true)
     {
         if (imu_buf.empty() || feature_buf.empty())
             return measurements;
 
-        if (!(imu_buf.back().timeStamp.toSec() > feature_buf.front()->header.stamp.toSec() + estimator_->td))
+        if (!(imu_buf.back().timeStamp.toSec() > feature_buf.front().timeStamp.toSec() + estimator_->td))
         {
             //ROS_WARN("wait for imu, only should happen at the beginning");
             sum_of_wait++;
             return measurements;
         }
 
-        if (!(imu_buf.front().timeStamp.toSec() < feature_buf.front()->header.stamp.toSec() + estimator_->td))
+        if (!(imu_buf.front().timeStamp.toSec() < feature_buf.front().timeStamp.toSec() + estimator_->td))
         {
             ROS_WARN("throw img, only should happen at the beginning");
             feature_buf.pop();
             continue;
         }
-        sensor_msgs::PointCloudConstPtr img_msg = feature_buf.front();
+        PointCloudMeasurement img_msg = feature_buf.front();
         feature_buf.pop();
 
         std::vector<ImuMeasurement> IMUs;
-        while (imu_buf.front().timeStamp.toSec() < img_msg->header.stamp.toSec() + estimator_->td)
+        while (imu_buf.front().timeStamp.toSec() < img_msg.timeStamp.toSec() + estimator_->td)
         {
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
@@ -350,32 +346,7 @@ VinSystem::getMeasurements()
     }
     return measurements;
 }
-//
-//void VinSystem::imu_callback(const sensor_msgs::ImuConstPtr imu_msg)
-//{
-//    if (imu_msg->header.stamp.toSec() <= last_imu_t)
-//    {
-//        ROS_WARN("imu message in disorder!");
-//        return;
-//    }
-//    last_imu_t = imu_msg->header.stamp.toSec();
-//
-//    m_buf.lock();
-//    imu_buf.push(imu_msg);
-//    m_buf.unlock();
-//    con.notify_one();
-//
-//    last_imu_t = imu_msg->header.stamp.toSec();
-//
-//    {
-//        std::lock_guard<std::mutex> lg(m_state);
-//        predict(imu_msg);
-//        std_msgs::Header header = imu_msg->header;
-//        header.frame_id = "world";
-//        if (estimator_->solver_flag == Estimator::SolverFlag::NON_LINEAR)
-//            pubLatestOdometry(tmp_P, tmp_Q, tmp_V, header);
-//    }
-//}
+
 
 bool VinSystem::addImage(const ros::Time & stamp, size_t cameraIndex,
                       const cv::Mat & image,
@@ -455,7 +426,7 @@ void VinSystem::restart_callback(const std_msgs::BoolConstPtr &restart_msg)
 void VinSystem::process() {
     mbFinished = false;
     while (!isFinishRequested()) {
-        std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>> measurements;
+        std::vector<std::pair<std::vector<ImuMeasurement>, PointCloudMeasurement>> measurements;
         std::unique_lock<std::mutex> lk(m_buf);
         con.wait(lk, [&] {
             return ((measurements = getMeasurements()).size() != 0 || isFinishRequested());
@@ -472,10 +443,9 @@ void VinSystem::process() {
         m_estimator.lock();
         for (auto &measurement : measurements) {
             auto img_msg = measurement.second;
-            double dx = 0, dy = 0, dz = 0, rx = 0, ry = 0, rz = 0;
             for (auto &imu_msg : measurement.first) {
                 double t = imu_msg.timeStamp.toSec();
-                double img_t = img_msg->header.stamp.toSec() + estimator_->td;
+                double img_t = img_msg.timeStamp.toSec() + estimator_->td;
                 if (t <= img_t) {
                     if (current_time < 0)
                         current_time = t;
@@ -501,32 +471,35 @@ void VinSystem::process() {
                 }
             }
 
-            ROS_DEBUG("processing vision data with stamp %f \n", img_msg->header.stamp.toSec());
+            ROS_DEBUG("processing vision data with stamp %f \n", img_msg.timeStamp.toSec());
 
             TicToc t_s;
             map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> image;
-            for (unsigned int i = 0; i < img_msg->points.size(); i++) {
-                int v = img_msg->channels[0].values[i] + 0.5;
+            for (unsigned int i = 0; i < img_msg.measurement.points.size(); i++) {
+                int v = img_msg.measurement.channels[0][i] + 0.5;
                 int feature_id = v / NUM_OF_CAM;
                 int camera_id = v % NUM_OF_CAM;
-                double x = img_msg->points[i].x;
-                double y = img_msg->points[i].y;
-                double z = img_msg->points[i].z;
-                double p_u = img_msg->channels[1].values[i];
-                double p_v = img_msg->channels[2].values[i];
-                double velocity_x = img_msg->channels[3].values[i];
-                double velocity_y = img_msg->channels[4].values[i];
+                double x = img_msg.measurement.points[i].x();
+                double y = img_msg.measurement.points[i].y();
+                double z = img_msg.measurement.points[i].z();
+                double p_u = img_msg.measurement.channels[1][i];
+                double p_v = img_msg.measurement.channels[2][i];
+                double velocity_x = img_msg.measurement.channels[3][i];
+                double velocity_y = img_msg.measurement.channels[4][i];
                 ROS_ASSERT(z == 1);
                 Eigen::Matrix<double, 7, 1> xyz_uv_velocity;
                 xyz_uv_velocity << x, y, z, p_u, p_v, velocity_x, velocity_y;
                 image[feature_id].emplace_back(camera_id, xyz_uv_velocity);
             }
-            estimator_->processImage(image, img_msg->header);
+            std_msgs::Header header1;
+            header1.stamp = img_msg.timeStamp;
+            estimator_->processImage(image, header1);
 
             double whole_t = t_s.toc();
             printStatistics(*estimator_, whole_t);
-            std_msgs::Header header = img_msg->header;
+            std_msgs::Header header ;
             header.frame_id = "world";
+            header.stamp = img_msg.timeStamp;
 
             pubOdometry(*estimator_, header);
             pubKeyPoses(*estimator_, header);

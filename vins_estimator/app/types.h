@@ -88,5 +88,17 @@
 
     typedef Eigen::Matrix<double, 9, 1> SpeedAndBias;
 
+    typedef std::vector<float> ChannelFloat32;
+    typedef std::vector< ChannelFloat32>  ChannelsType;
+
+/// \brief Camera measurement.
+struct PointCloudData {
+    std::vector<Eigen::Vector3d> points;  ///< Image.
+    ChannelsType channels; ///< Keypoints if available.
+};
+
+typedef Measurement<PointCloudData> PointCloudMeasurement;
+
+
 
 #endif // INCLUDE_OKVIS_MEASUREMENTS_HPP_

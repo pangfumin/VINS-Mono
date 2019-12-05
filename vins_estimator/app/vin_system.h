@@ -44,8 +44,7 @@ class VinSystem : public VioInterface{
 public:
     VinSystem(const std::string config_file);
     virtual ~VinSystem();
-//    void imu_callback(const sensor_msgs::ImuConstPtr imu_msg);
-//    void img_callback(const sensor_msgs::ImageConstPtr img_msg);
+
 
     bool addImage(const ros::Time & stamp, size_t cameraIndex,
                           const cv::Mat & image,
@@ -63,11 +62,11 @@ public:
     ros::Publisher pub_restart;
 
 private:
-    void feature_callback(const sensor_msgs::PointCloudConstPtr &feature_msg);
+    void feature_callback(const PointCloudMeasurement &feature_msg);
 
     void predict(const ImuMeasurement &imu_msg);
     void update();
-    std::vector<std::pair<std::vector<ImuMeasurement>, sensor_msgs::PointCloudConstPtr>>
+    std::vector<std::pair<std::vector<ImuMeasurement>, PointCloudMeasurement>>
     getMeasurements();
 
     void restart_callback(const std_msgs::BoolConstPtr &restart_msg);
@@ -79,7 +78,7 @@ private:
     std::condition_variable con;
     double current_time = -1;
     queue<ImuMeasurement> imu_buf;
-    queue<sensor_msgs::PointCloudConstPtr> feature_buf;
+    queue<PointCloudMeasurement> feature_buf;
     std::mutex m_image_mutex;
 
     std::deque<CameraMeasurement> m_image_buffer;

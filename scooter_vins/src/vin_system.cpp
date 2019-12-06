@@ -2,7 +2,7 @@
 // Created by pang on 2019/12/2.
 //
 
-#include "vin_system.h"
+#include "scooter_vins/vin_system.h"
 #include "scooter_vins/feature_track/parameters.h"
 #include "scooter_vins/parameters.h"
 #include "scooter_vins/feature_track/feature_tracker.h"

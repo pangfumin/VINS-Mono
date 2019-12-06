@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#include "vio_interface.h"
+#include "scooter_vins/vio_interface.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/eigen.hpp>
 

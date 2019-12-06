@@ -15,8 +15,8 @@
 #include <ros/ros.h>
 #include <opencv2/opencv.hpp>
 
-#include "vio_interface.h"
-#include "types.h"
+#include "scooter_vins/vio_interface.h"
+#include "scooter_vins/types.h"
 
 //#include <std_msgs/Bool.h>
 

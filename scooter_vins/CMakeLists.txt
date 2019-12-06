@@ -44,6 +44,8 @@ cs_add_library(${PROJECT_NAME}_lib
         src/initial/initial_ex_rotation.cpp
         src/feature_track/feature_tracker.cpp
         src/feature_track/parameters.cpp
+        src/vio_interface.cpp
+        src/vin_system.cpp
         )
 
 #######
@@ -51,8 +53,7 @@ cs_add_library(${PROJECT_NAME}_lib
 #######
 cs_add_executable(vio_app
         app/vio_app.cpp
-        app/vio_interface.cpp
-        app/vin_system.cpp
+
         app/ros_visualization.cpp
         )
 target_link_libraries(vio_app ${PROJECT_NAME}_lib)

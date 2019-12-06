@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 //    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
 
     std::string rosbag_file = "/home/pang/data/dataset/ninebot/B2_lidar_2018-09-21_14-46-46__B2.bag";
-    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
+    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway.yaml";
 
 //    std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
 //    std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";

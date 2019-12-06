@@ -1,13 +1,13 @@
-#include "vins_estimator/camodocal/camera_models/CameraFactory.h"
+#include "scooter_vins/camodocal/camera_models/CameraFactory.h"
 
 #include <boost/algorithm/string.hpp>
 
 
-#include "vins_estimator/camodocal/camera_models/CataCamera.h"
-#include "vins_estimator/camodocal/camera_models/EquidistantCamera.h"
-#include "vins_estimator/camodocal/camera_models/PinholeCamera.h"
-#include "vins_estimator/camodocal/camera_models/ScaramuzzaCamera.h"
-#include "vins_estimator/camodocal/camera_models/FovCamera.h"
+#include "scooter_vins/camodocal/camera_models/CataCamera.h"
+#include "scooter_vins/camodocal/camera_models/EquidistantCamera.h"
+#include "scooter_vins/camodocal/camera_models/PinholeCamera.h"
+#include "scooter_vins/camodocal/camera_models/ScaramuzzaCamera.h"
+#include "scooter_vins/camodocal/camera_models/FovCamera.h"
 
 #include <ceres/ceres.h>
 

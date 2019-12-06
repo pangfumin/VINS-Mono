@@ -1,4 +1,4 @@
-#include "vins_estimator/camodocal/camera_models/FovCamera.h"
+#include "scooter_vins/camodocal/camera_models/FovCamera.h"
 
 #include <cmath>
 #include <cstdio>
@@ -8,7 +8,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "vins_estimator/camodocal/gpl/gpl.h"
+#include "scooter_vins/camodocal/gpl/gpl.h"
 
 namespace camodocal
 {

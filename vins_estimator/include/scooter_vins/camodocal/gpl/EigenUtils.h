@@ -4,7 +4,7 @@
 #include <eigen3/Eigen/Dense>
 
 #include <ceres/rotation.h>
-#include "vins_estimator/camodocal/gpl/gpl.h"
+#include "scooter_vins/camodocal/gpl/gpl.h"
 
 namespace camodocal
 {

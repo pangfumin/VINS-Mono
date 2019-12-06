@@ -1,5 +1,5 @@
-#include "vins_estimator/camodocal/camera_models/Camera.h"
-#include "vins_estimator/camodocal/camera_models/ScaramuzzaCamera.h"
+#include "scooter_vins/camodocal/camera_models/Camera.h"
+#include "scooter_vins/camodocal/camera_models/ScaramuzzaCamera.h"
 
 #include <opencv2/calib3d/calib3d.hpp>
 

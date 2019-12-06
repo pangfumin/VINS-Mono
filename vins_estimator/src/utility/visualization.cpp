@@ -1,4 +1,4 @@
-#include "vins_estimator/utility/visualization.h"
+#include "scooter_vins/utility/visualization.h"
 
 using namespace ros;
 using namespace Eigen;

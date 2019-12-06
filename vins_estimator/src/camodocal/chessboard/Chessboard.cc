@@ -1,10 +1,10 @@
-#include "vins_estimator/camodocal/chessboard/Chessboard.h"
+#include "scooter_vins/camodocal/chessboard/Chessboard.h"
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "vins_estimator/camodocal/chessboard/ChessboardQuad.h"
-#include "vins_estimator/camodocal/chessboard/Spline.h"
+#include "scooter_vins/camodocal/chessboard/ChessboardQuad.h"
+#include "scooter_vins/camodocal/chessboard/Spline.h"
 
 #define MAX_CONTOUR_APPROX  7
 

@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "vins_estimator/camodocal/chessboard/ChessboardCorner.h"
+#include "scooter_vins/camodocal/chessboard/ChessboardCorner.h"
 
 namespace camodocal
 {

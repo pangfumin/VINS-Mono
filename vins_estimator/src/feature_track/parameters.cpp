@@ -1,4 +1,4 @@
-#include "vins_estimator/feature_track/parameters.h"
+#include "scooter_vins/feature_track/parameters.h"
 #include <maplab-common/file-system-tools.h>
 
 namespace feature_track {

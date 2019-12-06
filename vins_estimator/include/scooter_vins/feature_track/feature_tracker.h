@@ -9,13 +9,13 @@
 #include <opencv2/opencv.hpp>
 #include <eigen3/Eigen/Dense>
 
-#include "vins_estimator/camodocal/camera_models/CameraFactory.h"
-#include "vins_estimator/camodocal/camera_models/CataCamera.h"
-#include "vins_estimator/camodocal/camera_models/PinholeCamera.h"
-#include "vins_estimator/camodocal/camera_models/FovCamera.h"
+#include "scooter_vins/camodocal/camera_models/CameraFactory.h"
+#include "scooter_vins/camodocal/camera_models/CataCamera.h"
+#include "scooter_vins/camodocal/camera_models/PinholeCamera.h"
+#include "scooter_vins/camodocal/camera_models/FovCamera.h"
 
-#include "vins_estimator/feature_track/parameters.h"
-// #include "vins_estimator/tic_toc.h"
+#include "scooter_vins/feature_track/parameters.h"
+// #include "scooter_vins/tic_toc.h"
 
 using namespace std;
 using namespace camodocal;

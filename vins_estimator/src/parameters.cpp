@@ -1,4 +1,4 @@
-#include "vins_estimator/parameters.h"
+#include "scooter_vins/parameters.h"
 
 double INIT_DEPTH;
 double MIN_PARALLAX;

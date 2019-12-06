@@ -4,7 +4,7 @@
 #include <boost/shared_ptr.hpp>
 #include <opencv2/core/core.hpp>
 
-#include "vins_estimator/camodocal/camera_models/Camera.h"
+#include "scooter_vins/camodocal/camera_models/Camera.h"
 
 namespace camodocal
 {

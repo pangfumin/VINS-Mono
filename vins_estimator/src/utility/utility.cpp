@@ -1,4 +1,4 @@
-#include "vins_estimator/utility/utility.h"
+#include "scooter_vins/utility/utility.h"
 
 Eigen::Matrix3d Utility::g2R(const Eigen::Vector3d &g)
 {

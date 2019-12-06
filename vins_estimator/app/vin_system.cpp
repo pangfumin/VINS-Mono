@@ -3,10 +3,10 @@
 //
 
 #include "vin_system.h"
-#include "vins_estimator/feature_track/parameters.h"
-#include "vins_estimator/parameters.h"
-#include "vins_estimator/feature_track/feature_tracker.h"
-#include "vins_estimator/estimator.h"
+#include "scooter_vins/feature_track/parameters.h"
+#include "scooter_vins/parameters.h"
+#include "scooter_vins/feature_track/feature_tracker.h"
+#include "scooter_vins/estimator.h"
 
 
 

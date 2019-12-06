@@ -1,4 +1,4 @@
-#include "vins_estimator/camodocal/gpl/gpl.h"
+#include "scooter_vins/camodocal/gpl/gpl.h"
 
 #include <set>
 #ifdef _WIN32

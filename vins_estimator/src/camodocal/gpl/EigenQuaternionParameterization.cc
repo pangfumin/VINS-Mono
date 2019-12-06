@@ -1,4 +1,4 @@
-#include "vins_estimator/camodocal/gpl/EigenQuaternionParameterization.h"
+#include "scooter_vins/camodocal/gpl/EigenQuaternionParameterization.h"
 
 #include <cmath>
 

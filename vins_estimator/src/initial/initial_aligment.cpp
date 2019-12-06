@@ -1,4 +1,4 @@
-#include "vins_estimator/initial/initial_alignment.h"
+#include "scooter_vins/initial/initial_alignment.h"
 
 void solveGyroscopeBias(map<double, ImageFrame> &all_image_frame, Vector3d* Bgs)
 {

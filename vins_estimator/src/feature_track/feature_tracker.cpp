@@ -1,4 +1,4 @@
-#include "vins_estimator/feature_track/feature_tracker.h"
+#include "scooter_vins/feature_track/feature_tracker.h"
 
 namespace feature_track {
     int FeatureTracker::n_id = 0;

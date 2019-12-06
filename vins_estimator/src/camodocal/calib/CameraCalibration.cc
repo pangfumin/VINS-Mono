@@ -1,4 +1,4 @@
-#include "vins_estimator/camodocal/calib/CameraCalibration.h"
+#include "scooter_vins/camodocal/calib/CameraCalibration.h"
 
 #include <cstdio>
 #include <eigen3/Eigen/Dense>
@@ -11,11 +11,11 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 
-#include "vins_estimator/camodocal/camera_models/CameraFactory.h"
-#include "vins_estimator/camodocal/sparse_graph/Transform.h"
-#include "vins_estimator/camodocal/gpl/EigenQuaternionParameterization.h"
-#include "vins_estimator/camodocal/gpl/EigenUtils.h"
-#include "vins_estimator/camodocal/camera_models/CostFunctionFactory.h"
+#include "scooter_vins/camodocal/camera_models/CameraFactory.h"
+#include "scooter_vins/camodocal/sparse_graph/Transform.h"
+#include "scooter_vins/camodocal/gpl/EigenQuaternionParameterization.h"
+#include "scooter_vins/camodocal/gpl/EigenUtils.h"
+#include "scooter_vins/camodocal/camera_models/CostFunctionFactory.h"
 
 #include <ceres/ceres.h>
 namespace camodocal

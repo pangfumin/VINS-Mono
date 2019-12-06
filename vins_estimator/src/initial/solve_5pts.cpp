@@ -1,4 +1,4 @@
-#include "vins_estimator/initial/solve_5pts.h"
+#include "scooter_vins/initial/solve_5pts.h"
 
 
 namespace cv {

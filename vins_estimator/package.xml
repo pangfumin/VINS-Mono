@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <package format="2">
-  <name>vins_estimator</name>
+  <name>scooter_vins</name>
   <version>0.0.0</version>
   <description>
-    vins_estimator
+    scooter_vins
   </description>
   <maintainer email="maplab-dev@mavt.ethz.ch">maplab-developers</maintainer>
   <license>Apache 2.0</license>

@@ -1,4 +1,4 @@
-#include "vins_estimator/factor/projection_td_factor.h"
+#include "scooter_vins/factor/projection_td_factor.h"
 
 Eigen::Matrix2d ProjectionTdFactor::sqrt_info;
 double ProjectionTdFactor::sum_t;

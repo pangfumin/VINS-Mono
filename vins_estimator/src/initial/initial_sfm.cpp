@@ -1,4 +1,4 @@
-#include "vins_estimator/initial/initial_sfm.h"
+#include "scooter_vins/initial/initial_sfm.h"
 
 GlobalSFM::GlobalSFM(){}
 

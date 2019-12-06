@@ -18,7 +18,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <tf/transform_broadcaster.h>
-#include "vins_estimator/utility/CameraPoseVisualization.h"
+#include "scooter_vins/utility/CameraPoseVisualization.h"
 #include <eigen3/Eigen/Dense>
 //#include "../estimator.h"
 //#include "../parameters.h"

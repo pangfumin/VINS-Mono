@@ -1,10 +1,10 @@
-#include "vins_estimator/camodocal/camera_models/CostFunctionFactory.h"
+#include "scooter_vins/camodocal/camera_models/CostFunctionFactory.h"
 
 #include <ceres/ceres.h>
-#include "vins_estimator/camodocal/camera_models/CataCamera.h"
-#include "vins_estimator/camodocal/camera_models/EquidistantCamera.h"
-#include "vins_estimator/camodocal/camera_models/PinholeCamera.h"
-#include "vins_estimator/camodocal/camera_models/ScaramuzzaCamera.h"
+#include "scooter_vins/camodocal/camera_models/CataCamera.h"
+#include "scooter_vins/camodocal/camera_models/EquidistantCamera.h"
+#include "scooter_vins/camodocal/camera_models/PinholeCamera.h"
+#include "scooter_vins/camodocal/camera_models/ScaramuzzaCamera.h"
 
 namespace camodocal
 {

@@ -58,14 +58,14 @@ void readParameters(const std::string config_file)
 
     std::string OUTPUT_PATH;
     fsSettings["output_path"] >> OUTPUT_PATH;
-    VINS_RESULT_PATH = OUTPUT_PATH + "/vins_result_no_loop.csv";
-    std::cout << "result path " << VINS_RESULT_PATH << std::endl;
-
-    // create folder if not exists
-    FileSystemHelper::createDirectoryIfNotExists(OUTPUT_PATH.c_str());
-
-    std::ofstream fout(VINS_RESULT_PATH, std::ios::out);
-    fout.close();
+//    VINS_RESULT_PATH = OUTPUT_PATH + "/vins_result_no_loop.csv";
+//    std::cout << "result path " << VINS_RESULT_PATH << std::endl;
+//
+//    // create folder if not exists
+//    FileSystemHelper::createDirectoryIfNotExists(OUTPUT_PATH.c_str());
+//
+//    std::ofstream fout(VINS_RESULT_PATH, std::ios::out);
+//    fout.close();
 
     ACC_N = fsSettings["acc_n"];
     ACC_W = fsSettings["acc_w"];

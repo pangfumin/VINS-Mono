@@ -14,7 +14,7 @@
 #include <rosbag/view.h>
 #include <rosbag/chunked_file.h>
 #include <sensor_msgs/Imu.h>
-#include "vin_system.h"
+#include "scooter_vins/vin_system.h"
 #include "ros_visualization.h"
 
 const std::string RESET = "\033[0m";
@@ -63,8 +63,8 @@ int main(int argc, char **argv)
 //    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
 //    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
 
-    std::string rosbag_file = "/home/pang/data/dataset/ninebot/B2_lidar_2018-09-21_14-46-46__B2.bag";
-    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway.yaml";
+    std::string rosbag_file = "/persist/data/dataset/ninebot/B2_lidar_2018-09-21_14-46-46__B2.bag";
+    std::string config_file = "/persist/maplab_ws/src/scooter_vins/config/segway/segway.yaml";
 
 //    std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
 //    std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";

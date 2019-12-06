@@ -72,12 +72,12 @@ int main(int argc, char **argv)
     readTopics(config_file);
     RosVisualization rosVisualization(n);
 
-    VinSystem vinSystem(config_file);
-    vinSystem.setFullStateCallbackWithExtrinsics(
+    std::shared_ptr<VinSystem> vinSystem = std::make_shared<VinSystem>(config_file);
+    vinSystem->setFullStateCallbackWithExtrinsics(
             std::bind(&RosVisualization::publishFullStateExtrinsicAsCallback, &rosVisualization,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3, std::placeholders::_4));
-    vinSystem.setFeatureTrackImageCallback(
+    vinSystem->setFeatureTrackImageCallback(
             std::bind(&RosVisualization::publishFeatureTrackImageAsCallback, &rosVisualization,
                       std::placeholders::_1, std::placeholders::_2));
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
                 gyro.y() = imu->angular_velocity.y;
                 gyro.z() = imu->angular_velocity.z;
 
-                vinSystem.addImuMeasurement(imu->header.stamp, acc, gyro);
+                vinSystem->addImuMeasurement(imu->header.stamp, acc, gyro);
                 lastImuTs = imu->header.stamp.toNSec();
             }
         }
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
                 cv_ptr = cv_bridge::toCvCopy(image, sensor_msgs::image_encodings::MONO8);
                 cv::Mat image_cv = cv_ptr->image;
                 image_cv.convertTo(image_cv, CV_8UC1);
-                vinSystem.addImage(image->header.stamp, 0, image_cv);
+                vinSystem->addImage(image->header.stamp, 0, image_cv);
                 lastImageTs = image->header.stamp.toNSec();
             }
 

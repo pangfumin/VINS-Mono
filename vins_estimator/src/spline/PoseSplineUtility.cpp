@@ -39,8 +39,9 @@ Pose<double> PSUtility::EvaluatePS(double u, const Pose<double>& P0, const Pose<
 //    std::cout << "V3: " << (V3 - V2).transpose() << std::endl;
 //    std::cout << "V : " << V.transpose()<< std::endl;
 
-
-    return Pose<double>( V, quatLeftComp(Q0)*quatLeftComp(r1)*quatLeftComp(r2)*r3);
+    Quaternion q = quatLeftComp(Q0)*quatLeftComp(r1)*quatLeftComp(r2)*r3;
+    if (q(3) < 0) q = -q;
+    return Pose<double>( V, q);
 }
 
 Eigen::Vector3d PSUtility::EvaluateLinearVelocity(double u, double dt,

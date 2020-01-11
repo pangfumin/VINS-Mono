@@ -14,10 +14,7 @@ public:
     BSplineBase(double interval):mSplineOrder(SplineOrder),
                                  mTimeInterval(interval) {};
     virtual ~BSplineBase() {
-        for (auto i : mControlPointsParameter)
-            delete [] i;
-
-        mControlPointsParameter.clear();
+        clear();
     };
 
     int spline_order() const {
@@ -207,6 +204,18 @@ public:
         return mControlPointsParameter.at(i);
     }
 
+    void clear() {
+        knots_.clear();
+        mSampleValues.clear();
+        for (auto i : mControlPointsParameter)
+            delete [] i;
+
+        mControlPointsParameter.clear();
+    }
+
+    std::vector<double> knots() {
+        return knots_;
+    }
 
 private:
     void initialNewControlPoint(){

@@ -87,6 +87,11 @@
         Eigen::Map<Eigen::Matrix<double, 4,1>> q2(getControlPoint(bidx+2) + 3);
         Eigen::Map<Eigen::Matrix<double, 4,1>> q3(getControlPoint(bidx+3) + 3);
 
+//        std::cout << "q0: " << q0.transpose() << std::endl;
+//        std::cout << "q0: " << q0.transpose() << std::endl;
+//        std::cout << "q0: " << q0.transpose() << std::endl;
+//        std::cout << "q0: " << q0.transpose() << std::endl;
+
         return PSUtility::EvaluatePS(u,
                                      Pose<double>(t0, q0), Pose<double>(t1, q1),
                                      Pose<double>(t2, q2), Pose<double>(t3, q3));

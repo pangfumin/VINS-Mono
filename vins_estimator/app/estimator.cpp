@@ -6,6 +6,9 @@ Estimator::Estimator(): f_manager{Rs},
 {
     ROS_INFO("init begins");
     clearState();
+
+    pose_spline_ = std::make_shared<PoseSpline>(0.3);
+    bias_spline_ = std::make_shared<VectorSpaceSpline<6>>(0.3);
 }
 
 void Estimator::setParameter()
@@ -278,6 +281,53 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         last_P0 = Ps[0];
     }
 }
+
+void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image,
+        const std_msgs::Header &header) {
+    if (solver_flag == NON_LINEAR) {
+        std::vector<std::pair<double, Pose<double>>> meas_vec;
+        for (int i =0; i < WINDOW_SIZE+1; i++) {
+            std::pair<double, Pose<double>> meas;
+            Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+            T.matrix().topLeftCorner(3,3) = Rs[i];
+            T.matrix().topRightCorner(3,1) = Ps[i];
+
+            meas.first = Headers[i].stamp.toSec();
+            meas.second = Pose<double>(T);
+
+            meas_vec.push_back(meas);
+
+
+        }
+
+        pose_spline_->clear();
+        pose_spline_->initialPoseSpline(meas_vec);
+
+        for (int i =0; i < WINDOW_SIZE+1; i++) {
+            std::pair<double, Pose<double>> meas;
+            Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+            T.matrix().topLeftCorner(3,3) = Rs[i];
+            T.matrix().topRightCorner(3,1) = Ps[i];
+
+
+            auto eva_pose = pose_spline_->evalPoseSpline(Headers[i].stamp.toSec());
+
+
+            std::cout << "i: " << i << std::endl;
+            std::cout << "true: " << Pose<double>(T).parameters().transpose()
+                        << " " << Pose<double>(T).parameters().tail(4).norm() << std::endl;
+            std::cout << "eval: " << eva_pose.parameters().transpose()
+                        << " " <<  eva_pose.parameters().tail(4).norm() << std::endl;
+        }
+
+        
+
+
+
+    }
+}
+
+
 bool Estimator::initialStructure()
 {
     TicToc t_sfm;

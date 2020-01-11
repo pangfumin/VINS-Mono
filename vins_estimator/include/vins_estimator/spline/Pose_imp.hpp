@@ -273,6 +273,7 @@ inline bool Pose<T>::oplus(
     dq[3] = cos(halfnorm);
     q_ = (quatLeftComp(dq) * q_);
     q_.normalize();
+    if (q_[3] < T(0)) q_ = -q_;
     updateC();
     return true;
 }

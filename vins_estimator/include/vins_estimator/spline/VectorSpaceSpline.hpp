@@ -2,12 +2,11 @@
 #define VECTORSPACESPLINE_H
 
 #include <Eigen/Core>
-#include "PoseSpline/BSplineBase.hpp"
-#include "PoseSpline/VectorSpaceSpline.hpp"
-#include "PoseSpline/QuaternionSplineUtility.hpp"
-#include "PoseSpline/QuaternionSplineSampleError.hpp"
-#include "PoseSpline/VectorSplineSampleError.hpp"
-#include "PoseSpline/VectorSplineSampleAutoError.hpp"
+#include "vins_estimator/spline/BSplineBase.hpp"
+#include "vins_estimator/spline/VectorSpaceSpline.hpp"
+
+#include "vins_estimator/spline/VectorSplineSampleError.hpp"
+#include "vins_estimator/spline/VectorSplineSampleAutoError.hpp"
 
 template <int Dim = 3>
 class VectorSpaceSpline : public BSplineBase<Eigen::Matrix<double, Dim, 1>, 4> {
@@ -90,6 +89,7 @@ public:
                               Eigen::Map<Eigen::Matrix<double,Dim,1>>(Base::getControlPoint(bidx+2)),
                               Eigen::Map<Eigen::Matrix<double,Dim,1>>(Base::getControlPoint(bidx+3)));
     }
+
     Eigen::Matrix<double, Dim, 1> evaluateDotSpline(const real_t t) {
         std::pair<double,unsigned  int> ui = Base::computeUAndTIndex(t);
         double u = ui.first;

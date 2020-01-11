@@ -23,6 +23,12 @@
 #include <opencv2/core/eigen.hpp>
 
 
+
+/// spline
+#include "vins_estimator/spline/PoseSpline.hpp"
+#include "vins_estimator/spline/VectorSpaceSpline.hpp"
+
+
 class Estimator
 {
   public:
@@ -138,4 +144,10 @@ class Estimator
     Vector3d relo_relative_t;
     Quaterniond relo_relative_q;
     double relo_relative_yaw;
+
+
+
+    /// Spline
+
+
 };

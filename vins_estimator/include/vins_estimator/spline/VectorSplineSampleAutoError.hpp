@@ -1,12 +1,12 @@
 #ifndef VECTORSPLINESAMPLEAUTOERROR_H
 #define  VECTORSPLINESAMPLEAUTOERROR_H
 
-#include "PoseSpline/QuaternionSpline.hpp"
+//#include "PoseSpline/QuaternionSpline.hpp"
 #include <ceres/ceres.h>
 #include <iostream>
-#include "PoseSpline/QuaternionLocalParameter.hpp"
-#include "PoseSpline/ErrorInterface.hpp"
-#include "PoseSpline/QuaternionSplineUtility.hpp"
+//#include "PoseSpline/QuaternionLocalParameter.hpp"
+//#include "PoseSpline/ErrorInterface.hpp"
+#include "vins_estimator/spline/QuaternionSplineUtility.hpp"
 
 
 class VectorSplineSampleAutoError {

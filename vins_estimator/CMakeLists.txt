@@ -44,6 +44,11 @@ cs_add_library(${PROJECT_NAME}_lib
         src/initial/initial_ex_rotation.cpp
         src/feature_track/feature_tracker.cpp
         src/feature_track/parameters.cpp
+
+        src/spline/PoseSplineUtility.cpp
+        src/spline/PoseSpline.cpp
+        src/spline/PoseSplineSampleError.cpp
+        src/spline/QuaternionSplineUtility.cpp
         )
 
 #######

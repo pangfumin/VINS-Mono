@@ -1,6 +1,6 @@
-#include "PoseSpline/PoseSplineSampleError.hpp"
-#include "PoseSpline/QuaternionSplineUtility.hpp"
-#include "PoseSpline/PoseLocalParameter.hpp"
+#include "vins_estimator/spline/PoseSplineSampleError.hpp"
+#include "vins_estimator/spline/QuaternionSplineUtility.hpp"
+#include "vins_estimator/spline/PoseLocalParameter.hpp"
 
 
 PoseSplineSampleError::PoseSplineSampleError(double t_meas,

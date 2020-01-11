@@ -1,12 +1,11 @@
 #ifndef POSESPLINESAMPLEERROR_H
 #define  POSESPLINESAMPLEERROR_H
 
-#include "PoseSpline/QuaternionSpline.hpp"
+//#include "vins_estimator/spline/QuaternionSpline.hpp"
 #include <ceres/ceres.h>
 #include <iostream>
-#include "PoseSpline/QuaternionLocalParameter.hpp"
-#include "PoseSpline/ErrorInterface.hpp"
-#include "PoseSpline/Pose.hpp"
+#include "vins_estimator/spline/QuaternionLocalParameter.hpp"
+#include "vins_estimator/spline/Pose.hpp"
 
 
 class PoseSplineSampleError

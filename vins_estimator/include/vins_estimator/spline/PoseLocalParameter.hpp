@@ -4,7 +4,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <ceres/ceres.h>
-#include "PoseSpline/Pose.hpp"
+#include "vins_estimator/spline/Pose.hpp"
 
 
 /*

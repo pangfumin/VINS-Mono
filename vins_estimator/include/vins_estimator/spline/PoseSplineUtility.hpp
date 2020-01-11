@@ -2,8 +2,8 @@
 #define POSESPLINEUTILITY_H
 
 
-#include "PoseSpline/QuaternionSplineUtility.hpp"
-#include "PoseSpline/Pose.hpp"
+#include "vins_estimator/spline/QuaternionSplineUtility.hpp"
+#include "vins_estimator/spline/Pose.hpp"
 
 class PSUtility {
 public:

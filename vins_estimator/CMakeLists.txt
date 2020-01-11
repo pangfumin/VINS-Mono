@@ -29,7 +29,7 @@ cs_add_library(${PROJECT_NAME}_lib
         src/camodocal/gpl/EigenQuaternionParameterization.cc
 
         src/parameters.cpp
-        src/estimator.cpp
+
         src/feature_manager.cpp
         src/factor/pose_local_parameterization.cpp
         src/factor/projection_factor.cpp
@@ -53,6 +53,7 @@ cs_add_executable(vio_app
         app/vio_app.cpp
         app/vio_interface.cpp
         app/vin_system.cpp
+        app/estimator.cpp
         )
 target_link_libraries(vio_app ${PROJECT_NAME}_lib)
 

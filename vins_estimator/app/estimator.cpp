@@ -1,4 +1,4 @@
-#include "vins_estimator/estimator.h"
+#include "estimator.h"
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),

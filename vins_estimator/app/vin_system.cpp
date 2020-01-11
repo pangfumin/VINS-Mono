@@ -6,7 +6,7 @@
 #include "vins_estimator/feature_track/parameters.h"
 #include "vins_estimator/parameters.h"
 #include "vins_estimator/feature_track/feature_tracker.h"
-#include "vins_estimator/estimator.h"
+#include "estimator.h"
 
 
 

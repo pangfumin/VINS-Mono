@@ -1,5 +1,6 @@
-#include "PoseSpline/PoseSplineUtility.hpp"
+#include "vins_estimator/spline/PoseSplineUtility.hpp"
 
+using  namespace JPL;
 Pose<double> PSUtility::EvaluatePS(double u, const Pose<double>& P0, const Pose<double>& P1,
                 const Pose<double>& P2, const Pose<double>& P3) {
     double b1 = QSUtility::beta1(u);

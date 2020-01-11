@@ -54,11 +54,11 @@ int main(int argc, char **argv)
 //    std::string rosbag_file = "/home/pang/software/MYNT-EYE-S-SDK/2019-11-19-10-29-33.bag";
 //    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/mynteye/mynteye_s_config.yaml";
 
-    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
-    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
+//    std::string rosbag_file = "/home/pang/data/dataset/ninebot_scooter/2019-11-29_11-36-46/fisheye_imu1.bag";
+//    std::string config_file = "/home/pang/hl_ws/src/VINS-Mono/config/segway/segway_scooter.yaml";
 
-//    std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
-//    std::string config_file = "/home/pang/maplab_ws/src/VINS-Mono/config/euroc/euroc_config.yaml";
+    std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
+    std::string config_file = "/home/pang/maplab_ws/src/SplineVIO/config/euroc/euroc_config.yaml";
 
     readTopics(config_file);
     VinSystem vinSystem(config_file);

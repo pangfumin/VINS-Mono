@@ -1,4 +1,5 @@
 #include "estimator.h"
+#include "vins_estimator/spline/JPL_imu_error.h"
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),
@@ -596,6 +597,60 @@ void Estimator::optimizationSpline() {
 
     // 2. add factors
 
+    // IMU factor
+    for (int i = 0; i < WINDOW_SIZE; i++)
+    {
+        int j = i + 1;
+//        if (pre_integrations[j]->sum_dt > 10.0)
+//            continue;
+//        JPL::ImuParam imuParam;
+//        imuParam.ACC_N = ACC_N;
+//        imuParam.ACC_W = ACC_W;
+//        imuParam.GYR_N = GYR_N;
+//        imuParam.GYR_W = GYR_W;
+//
+        const std::vector<double> dt_vec(pre_integrations[j]->dt_buf);
+        const std::vector<Eigen::Vector3d> _acc_vec( pre_integrations[j]->acc_buf);
+        const std::vector<Eigen::Vector3d> _gyr_vec(pre_integrations[j]->gyr_buf);
+        const Eigen::Vector3d _linearized_ba(pre_integrations[j]->linearized_ba);
+        const Eigen::Vector3d _linearized_bg(pre_integrations[j]->linearized_bg);
+        const ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+        std::cout << "dt_vec: " << dt_vec.size() << std::endl;
+        std::cout << "_acc_vec: " << _acc_vec.size() << std::endl;
+        std::cout << "_gyr_vec: " << _gyr_vec.size() << std::endl;
+
+        const Eigen::Vector3d acc_0 = pre_integrations[j]->acc_first;
+        const Eigen::Vector3d gyr_0 = pre_integrations[j]->gyr_first;
+
+
+        std::shared_ptr<Hamilton::IntegrationBase> hamilton_imu_base =
+                std::make_shared<Hamilton::IntegrationBase>(acc_0,
+                                                           gyr_0,
+                                                           _linearized_ba,
+                                                           _linearized_bg);
+
+        hamilton_imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
+
+        std::shared_ptr<JPL::IntegrationBase> imu_base =
+                std::make_shared<JPL::IntegrationBase>(acc_0,
+                                                       gyr_0,
+                                                       _linearized_ba,
+                                                       _linearized_bg,
+                                                       imuParam);
+
+        imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
+
+
+        std::cout << "ori delta_q: " << pre_integrations[j]->delta_q.coeffs().transpose() << std::endl;
+        std::cout << "Ham delta_q: " << hamilton_imu_base->delta_q.coeffs().transpose() << std::endl;
+        std::cout << "JPL delta_q: " << imu_base->delta_q.transpose() << std::endl;
+
+        std::cout << "ori delta_p: " << pre_integrations[j]->delta_p.transpose() << std::endl;
+        std::cout << "Ham delta_p: " << hamilton_imu_base->delta_p.transpose() << std::endl;
+        std::cout << "JPL delta_p: " << imu_base->delta_p.transpose() << std::endl;
+
+    }
+
 
     // 3. optimization
 
@@ -828,6 +883,7 @@ void Estimator::optimization()
                                  last_marginalization_parameter_blocks);
     }
 
+    // IMU factor
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
         int j = i + 1;
@@ -836,6 +892,7 @@ void Estimator::optimization()
         Hamilton::IMUFactor* imu_factor = new Hamilton::IMUFactor(pre_integrations[j]);
         problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]);
     }
+
     int f_m_cnt = 0;
     int feature_index = -1;
     for (auto &it_per_id : f_manager.feature)

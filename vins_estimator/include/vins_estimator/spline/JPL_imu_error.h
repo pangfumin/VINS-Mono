@@ -13,6 +13,8 @@
 
 namespace  JPL {
     struct ImuParam {
+        ImuParam(double acc_n, double gyr_n, double acc_w, double gyr_w):
+        ACC_N(acc_n), GYR_N(gyr_n),ACC_W(acc_w), GYR_W(gyr_w){}
         double ACC_N = 0.1;
         double GYR_N = 0.01;
         double ACC_W = 0.001;
@@ -38,10 +40,13 @@ class IntegrationBase{
     public:
         IntegrationBase() = delete;
 
+
         IntegrationBase(const Eigen::Vector3d &_acc_0, const Eigen::Vector3d &_gyr_0,
                         const Eigen::Vector3d &_linearized_ba, const Eigen::Vector3d &_linearized_bg,
                         const ImuParam &imuParam)
-                : acc_0{_acc_0}, gyr_0{_gyr_0}, linearized_acc{_acc_0}, linearized_gyr{_gyr_0},
+                : acc_first(_acc_0), gyr_first(_gyr_0),
+                  acc_0{_acc_0}, gyr_0{_gyr_0},
+                  linearized_acc{_acc_0}, linearized_gyr{_gyr_0},
                   linearized_ba{_linearized_ba}, linearized_bg{_linearized_bg},
                   jacobian{Eigen::Matrix<double, 15, 15>::Identity()},
                   covariance{Eigen::Matrix<double, 15, 15>::Zero()},
@@ -61,6 +66,14 @@ class IntegrationBase{
             acc_buf.push_back(acc);
             gyr_buf.push_back(gyr);
             propagate(dt, acc, gyr);
+        }
+
+        void push_back_batch(const std::vector<double>& dt_vec,
+                             const std::vector<Eigen::Vector3d> &_acc_vec,
+                             const std::vector<Eigen::Vector3d> &_gyr_vec) {
+            for (int i = 1; i < _acc_vec.size(); i ++) {
+                this->push_back(dt_vec.at(i-1), _acc_vec.at(i), _gyr_vec.at(i));
+            }
         }
 
         void repropagate(const Eigen::Vector3d &_linearized_ba, const Eigen::Vector3d &_linearized_bg) {
@@ -294,6 +307,7 @@ class IntegrationBase{
         }
 
         double dt;
+        const Eigen::Vector3d acc_first, gyr_first;
         Eigen::Vector3d acc_0, gyr_0;
         Eigen::Vector3d acc_1, gyr_1;
 

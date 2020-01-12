@@ -94,6 +94,7 @@ class Estimator
     std_msgs::Header Headers[(WINDOW_SIZE + 1)];
 
     Hamilton::IntegrationBase *pre_integrations[(WINDOW_SIZE + 1)];
+    std::shared_ptr<JPL::IntegrationBase> JPL_pre_integrations[(WINDOW_SIZE + 1)];
     Vector3d acc_0, gyr_0;
 
     vector<double> dt_buf[(WINDOW_SIZE + 1)];
@@ -132,6 +133,7 @@ class Estimator
 
     map<double, ImageFrame> all_image_frame;
     Hamilton::IntegrationBase *tmp_pre_integration;
+    std::shared_ptr<JPL::IntegrationBase> tmp_JPL_pre_integration;
 
     //relocalization variable
     bool relocalization_info;

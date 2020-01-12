@@ -3,7 +3,8 @@
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),
-                        tmp_pre_integration(NULL)
+                        tmp_pre_integration(NULL),
+                        tmp_JPL_pre_integration(nullptr)
 {
     ROS_INFO("init begins");
     clearState();
@@ -40,6 +41,7 @@ void Estimator::clearState()
         angular_velocity_buf[i].clear();
 
         pre_integrations[i] = nullptr;
+        JPL_pre_integrations[i] = nullptr;
     }
 
     for (int i = 0; i < NUM_OF_CAM; i++)
@@ -102,6 +104,7 @@ void Estimator::resetState()
         if (pre_integrations[i] != nullptr)
             delete pre_integrations[i];
         pre_integrations[i] = nullptr;
+        JPL_pre_integrations[i] = nullptr;
     }
 
     for (int i = 0; i < NUM_OF_CAM; i++)
@@ -136,6 +139,7 @@ void Estimator::resetState()
         delete last_marginalization_info;
 
     tmp_pre_integration = nullptr;
+    tmp_JPL_pre_integration = nullptr;
     last_marginalization_info = nullptr;
     last_marginalization_parameter_blocks.clear();
 
@@ -161,12 +165,18 @@ void Estimator::processIMU(double dt, const Vector3d &linear_acceleration, const
     if (!pre_integrations[frame_count])
     {
         pre_integrations[frame_count] = new Hamilton::IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
+        JPL::ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+        JPL_pre_integrations[frame_count] =
+                std::make_shared<JPL::IntegrationBase>(acc_0, gyr_0, Bas[frame_count], Bgs[frame_count], imuParam);
     }
+
     if (frame_count != 0)
     {
         pre_integrations[frame_count]->push_back(dt, linear_acceleration, angular_velocity);
+        JPL_pre_integrations[frame_count]->push_back(dt, linear_acceleration, angular_velocity);
         //if(solver_flag != NON_LINEAR)
             tmp_pre_integration->push_back(dt, linear_acceleration, angular_velocity);
+            tmp_JPL_pre_integration->push_back(dt, linear_acceleration, angular_velocity);
 
         dt_buf[frame_count].push_back(dt);
         linear_acceleration_buf[frame_count].push_back(linear_acceleration);
@@ -204,6 +214,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     imageframe.pre_integration = tmp_pre_integration;
     all_image_frame.insert(make_pair(header.stamp.toSec(), imageframe));
     tmp_pre_integration = new Hamilton::IntegrationBase{acc_0, gyr_0, Bas[frame_count], Bgs[frame_count]};
+    JPL::ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+    tmp_JPL_pre_integration = std::make_shared<JPL::IntegrationBase>(acc_0, gyr_0, Bas[frame_count], Bgs[frame_count],imuParam);
 
     if(ESTIMATE_EXTRINSIC == 2)
     {
@@ -553,8 +565,7 @@ void Estimator::solveOdometry()
         f_manager.triangulate(Ps, tic, ric);
         ROS_DEBUG("triangulation costs %f", t_tri.toc());
         optimization();
-        optimizationSpline();
-
+//        optimizationSpline();
 
     }
 }
@@ -597,59 +608,59 @@ void Estimator::optimizationSpline() {
 
     // 2. add factors
 
-    // IMU factor
-    for (int i = 0; i < WINDOW_SIZE; i++)
-    {
-        int j = i + 1;
-//        if (pre_integrations[j]->sum_dt > 10.0)
-//            continue;
-//        JPL::ImuParam imuParam;
-//        imuParam.ACC_N = ACC_N;
-//        imuParam.ACC_W = ACC_W;
-//        imuParam.GYR_N = GYR_N;
-//        imuParam.GYR_W = GYR_W;
+//    // IMU factor
+//    for (int i = 0; i < WINDOW_SIZE; i++)
+//    {
+//        int j = i + 1;
+////        if (pre_integrations[j]->sum_dt > 10.0)
+////            continue;
+////        JPL::ImuParam imuParam;
+////        imuParam.ACC_N = ACC_N;
+////        imuParam.ACC_W = ACC_W;
+////        imuParam.GYR_N = GYR_N;
+////        imuParam.GYR_W = GYR_W;
+////
+//        const std::vector<double> dt_vec(pre_integrations[j]->dt_buf);
+//        const std::vector<Eigen::Vector3d> _acc_vec( pre_integrations[j]->acc_buf);
+//        const std::vector<Eigen::Vector3d> _gyr_vec(pre_integrations[j]->gyr_buf);
+//        const Eigen::Vector3d _linearized_ba(pre_integrations[j]->linearized_ba);
+//        const Eigen::Vector3d _linearized_bg(pre_integrations[j]->linearized_bg);
+//        const ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+//        std::cout << "dt_vec: " << dt_vec.size() << std::endl;
+//        std::cout << "_acc_vec: " << _acc_vec.size() << std::endl;
+//        std::cout << "_gyr_vec: " << _gyr_vec.size() << std::endl;
 //
-        const std::vector<double> dt_vec(pre_integrations[j]->dt_buf);
-        const std::vector<Eigen::Vector3d> _acc_vec( pre_integrations[j]->acc_buf);
-        const std::vector<Eigen::Vector3d> _gyr_vec(pre_integrations[j]->gyr_buf);
-        const Eigen::Vector3d _linearized_ba(pre_integrations[j]->linearized_ba);
-        const Eigen::Vector3d _linearized_bg(pre_integrations[j]->linearized_bg);
-        const ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
-        std::cout << "dt_vec: " << dt_vec.size() << std::endl;
-        std::cout << "_acc_vec: " << _acc_vec.size() << std::endl;
-        std::cout << "_gyr_vec: " << _gyr_vec.size() << std::endl;
-
-        const Eigen::Vector3d acc_0 = pre_integrations[j]->acc_first;
-        const Eigen::Vector3d gyr_0 = pre_integrations[j]->gyr_first;
-
-
-        std::shared_ptr<Hamilton::IntegrationBase> hamilton_imu_base =
-                std::make_shared<Hamilton::IntegrationBase>(acc_0,
-                                                           gyr_0,
-                                                           _linearized_ba,
-                                                           _linearized_bg);
-
-        hamilton_imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
-
-        std::shared_ptr<JPL::IntegrationBase> imu_base =
-                std::make_shared<JPL::IntegrationBase>(acc_0,
-                                                       gyr_0,
-                                                       _linearized_ba,
-                                                       _linearized_bg,
-                                                       imuParam);
-
-        imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
-
-
-        std::cout << "ori delta_q: " << pre_integrations[j]->delta_q.coeffs().transpose() << std::endl;
-        std::cout << "Ham delta_q: " << hamilton_imu_base->delta_q.coeffs().transpose() << std::endl;
-        std::cout << "JPL delta_q: " << imu_base->delta_q.transpose() << std::endl;
-
-        std::cout << "ori delta_p: " << pre_integrations[j]->delta_p.transpose() << std::endl;
-        std::cout << "Ham delta_p: " << hamilton_imu_base->delta_p.transpose() << std::endl;
-        std::cout << "JPL delta_p: " << imu_base->delta_p.transpose() << std::endl;
-
-    }
+//        const Eigen::Vector3d acc_0 = pre_integrations[j]->acc_first;
+//        const Eigen::Vector3d gyr_0 = pre_integrations[j]->gyr_first;
+//
+//
+//        std::shared_ptr<Hamilton::IntegrationBase> hamilton_imu_base =
+//                std::make_shared<Hamilton::IntegrationBase>(acc_0,
+//                                                           gyr_0,
+//                                                           _linearized_ba,
+//                                                           _linearized_bg);
+//
+//        hamilton_imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
+//
+//        std::shared_ptr<JPL::IntegrationBase> imu_base =
+//                std::make_shared<JPL::IntegrationBase>(acc_0,
+//                                                       gyr_0,
+//                                                       _linearized_ba,
+//                                                       _linearized_bg,
+//                                                       imuParam);
+//
+//        imu_base->push_back_batch(dt_vec, _acc_vec, _gyr_vec);
+//
+//
+//        std::cout << "ori delta_q: " << pre_integrations[j]->delta_q.coeffs().transpose() << std::endl;
+//        std::cout << "Ham delta_q: " << hamilton_imu_base->delta_q.coeffs().transpose() << std::endl;
+//        std::cout << "JPL delta_q: " << imu_base->delta_q.transpose() << std::endl;
+//
+//        std::cout << "ori delta_p: " << pre_integrations[j]->delta_p.transpose() << std::endl;
+//        std::cout << "Ham delta_p: " << hamilton_imu_base->delta_p.transpose() << std::endl;
+//        std::cout << "JPL delta_p: " << imu_base->delta_p.transpose() << std::endl;
+//
+//    }
 
 
     // 3. optimization
@@ -891,6 +902,42 @@ void Estimator::optimization()
             continue;
         Hamilton::IMUFactor* imu_factor = new Hamilton::IMUFactor(pre_integrations[j]);
         problem.AddResidualBlock(imu_factor, NULL, para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]);
+
+//        std::cout << "ori delta_q: " << pre_integrations[j]->delta_q.coeffs().transpose() << std::endl;
+//        std::cout << "JPL delta_q: " << JPL_pre_integrations[j]->delta_q.transpose() << std::endl;
+//
+//        std::cout << "ori delta_p: " << pre_integrations[j]->delta_p.transpose() << std::endl;
+//        std::cout << "JPL delta_p: " << JPL_pre_integrations[j]->delta_p.transpose() << std::endl;
+//
+//        std::cout << "ori delta_v: " << pre_integrations[j]->delta_v.transpose() << std::endl;
+//        std::cout << "JPL delta_v: " << JPL_pre_integrations[j]->delta_v.transpose() << std::endl;
+
+
+
+
+
+        JPL::IMUFactor* JPL_imu_factor = new JPL::IMUFactor(JPL_pre_integrations[j].get());
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+        T.matrix().topLeftCorner(3,3) = Rs[i];
+        T.matrix().topRightCorner(3,1) = Ps[i];
+        Pose<double> JPL_T_i(T);
+        T.matrix().topLeftCorner(3,3) = Rs[j];
+        T.matrix().topRightCorner(3,1) = Ps[j];
+        Pose<double> JPL_T_j(T);
+
+        Eigen::Matrix<double,15,1> JPL_residuals, hamilton_residuals;
+        double* JPL_parameters[4] = {JPL_T_i.data(), para_SpeedBias[i], JPL_T_j.data(), para_SpeedBias[j]};
+        double* hamilton_parameters[4] = {para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]};
+
+
+        std::cout << "---------------------" << i << "---------------------" << std::endl;
+        JPL_imu_factor->Evaluate(JPL_parameters, JPL_residuals.data(), NULL);
+        imu_factor->Evaluate(hamilton_parameters, hamilton_residuals.data(), NULL);
+
+        std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+        std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+
+
     }
 
     int f_m_cnt = 0;
@@ -1194,6 +1241,7 @@ void Estimator::slideWindow()
                 Rs[i].swap(Rs[i + 1]);
 
                 std::swap(pre_integrations[i], pre_integrations[i + 1]);
+                std::swap(JPL_pre_integrations[i], JPL_pre_integrations[i + 1]);
 
                 dt_buf[i].swap(dt_buf[i + 1]);
                 linear_acceleration_buf[i].swap(linear_acceleration_buf[i + 1]);
@@ -1214,6 +1262,11 @@ void Estimator::slideWindow()
 
             delete pre_integrations[WINDOW_SIZE];
             pre_integrations[WINDOW_SIZE] = new Hamilton::IntegrationBase{acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE]};
+
+            JPL::ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+            JPL_pre_integrations[WINDOW_SIZE] =
+                    std::make_shared<JPL::IntegrationBase>(acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE], imuParam);
+
 
             dt_buf[WINDOW_SIZE].clear();
             linear_acceleration_buf[WINDOW_SIZE].clear();
@@ -1251,6 +1304,7 @@ void Estimator::slideWindow()
                 Vector3d tmp_angular_velocity = angular_velocity_buf[frame_count][i];
 
                 pre_integrations[frame_count - 1]->push_back(tmp_dt, tmp_linear_acceleration, tmp_angular_velocity);
+                JPL_pre_integrations[frame_count - 1]->push_back(tmp_dt, tmp_linear_acceleration, tmp_angular_velocity);
 
                 dt_buf[frame_count - 1].push_back(tmp_dt);
                 linear_acceleration_buf[frame_count - 1].push_back(tmp_linear_acceleration);
@@ -1266,6 +1320,10 @@ void Estimator::slideWindow()
 
             delete pre_integrations[WINDOW_SIZE];
             pre_integrations[WINDOW_SIZE] = new Hamilton::IntegrationBase{acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE]};
+
+            JPL::ImuParam imuParam(ACC_N, GYR_N, ACC_W, GYR_W);
+            JPL_pre_integrations[WINDOW_SIZE] =
+                    std::make_shared<JPL::IntegrationBase>(acc_0, gyr_0, Bas[WINDOW_SIZE], Bgs[WINDOW_SIZE], imuParam);
 
             dt_buf[WINDOW_SIZE].clear();
             linear_acceleration_buf[WINDOW_SIZE].clear();

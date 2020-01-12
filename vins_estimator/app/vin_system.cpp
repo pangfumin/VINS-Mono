@@ -505,7 +505,7 @@ void VinSystem::process() {
             pubOdometry(*estimator_, header);
             pubKeyPoses(*estimator_, header);
             pubCameraPose(*estimator_, header);
-            pubPointCloud(*estimator_, header);
+            //pubPointCloud(*estimator_, header);
             pubTF(*estimator_, header);
             pubKeyframe(*estimator_);
 

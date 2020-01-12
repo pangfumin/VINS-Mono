@@ -137,6 +137,9 @@ namespace Hamilton {
                 //step_V = V;
                 jacobian = F * jacobian;
                 covariance = F * covariance * F.transpose() + V * noise * V.transpose();
+
+                sqrt_Sigma = Eigen::LLT<Eigen::Matrix<double, 15, 15>>(
+                        covariance.inverse()).matrixL().transpose();
             }
 
         }
@@ -176,6 +179,19 @@ namespace Hamilton {
                  const Eigen::Vector3d &Pj, const Eigen::Quaterniond &Qj, const Eigen::Vector3d &Vj,
                  const Eigen::Vector3d &Baj, const Eigen::Vector3d &Bgj) {
             Eigen::Matrix<double, 15, 1> residuals;
+//
+//            std::cout << "ham Pi: " << Pi.transpose() << std::endl;
+//            std::cout << "ham Qi: " << Qi.coeffs().transpose() << std::endl;
+//            std::cout << "ham Vi: " << Vi.transpose() << std::endl;
+//            std::cout << "ham Bai: " << Bai.transpose() << std::endl;
+//            std::cout << "ham Bgi: " << Bgi.transpose() << std::endl;
+//
+//            std::cout << "ham Pj: " << Pj.transpose() << std::endl;
+//            std::cout << "ham Qj: " << Qj.coeffs().transpose() << std::endl;
+//            std::cout << "ham Vj: " << Vj.transpose() << std::endl;
+//            std::cout << "ham Baj: " << Baj.transpose() << std::endl;
+//            std::cout << "ham Bgj: " << Bgj.transpose() << std::endl;
+
 
             Eigen::Matrix3d dp_dba = jacobian.block<3, 3>(O_P, O_BA);
             Eigen::Matrix3d dp_dbg = jacobian.block<3, 3>(O_P, O_BG);
@@ -192,12 +208,26 @@ namespace Hamilton {
             Eigen::Vector3d corrected_delta_v = delta_v + dv_dba * dba + dv_dbg * dbg;
             Eigen::Vector3d corrected_delta_p = delta_p + dp_dba * dba + dp_dbg * dbg;
 
+//            std::cout << "ham corrected_delta_q: " << corrected_delta_q.coeffs().transpose() << std::endl;
+//            std::cout << "ham corrected_delta_v: " << corrected_delta_v.transpose() << std::endl;
+//            std::cout << "ham corrected_delta_p: " << corrected_delta_p.transpose() << std::endl;
+
+            Eigen::Matrix3d R_WIi = Qi.toRotationMatrix();
+            Eigen::Vector3d temp_p = 0.5 * G * sum_dt * sum_dt + Pj - Pi - Vi * sum_dt;
+            Eigen::Vector3d temp_v = G * sum_dt + Vj - Vi;
+
             residuals.block<3, 1>(O_P, 0) =
-                    Qi.inverse() * (0.5 * G * sum_dt * sum_dt + Pj - Pi - Vi * sum_dt) - corrected_delta_p;
+                    R_WIi.transpose() * temp_p - corrected_delta_p;
             residuals.block<3, 1>(O_R, 0) = 2 * (corrected_delta_q.inverse() * (Qi.inverse() * Qj)).vec();
-            residuals.block<3, 1>(O_V, 0) = Qi.inverse() * (G * sum_dt + Vj - Vi) - corrected_delta_v;
+            residuals.block<3, 1>(O_V, 0) = R_WIi.transpose() * temp_v - corrected_delta_v;
             residuals.block<3, 1>(O_BA, 0) = Baj - Bai;
             residuals.block<3, 1>(O_BG, 0) = Bgj - Bgi;
+
+//            std::cout << "ham R_WIi: \n" << R_WIi << std::endl;
+//            std::cout << "ham temp_p: " << temp_p.transpose() << std::endl;
+//            std::cout << "ham temp_v: " << temp_v.transpose() << std::endl;
+//            std::cout << "ham residuals: " << residuals.transpose() << std::endl;
+//            std::cout << "ham residuals v: " << R_WIi.transpose() * temp_v - corrected_delta_v<< " " << residuals.block<3, 1>(O_V, 0).transpose() << std::endl;
             return residuals;
         }
 
@@ -214,6 +244,7 @@ namespace Hamilton {
         Eigen::Matrix<double, 15, 15> step_jacobian;
         Eigen::Matrix<double, 15, 18> step_V;
         Eigen::Matrix<double, 18, 18> noise;
+        Eigen::Matrix<double, 15, 15> sqrt_Sigma;
 
         double sum_dt;
         Eigen::Vector3d delta_p;

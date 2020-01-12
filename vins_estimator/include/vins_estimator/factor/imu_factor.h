@@ -63,7 +63,9 @@ namespace Hamilton {
 
             Eigen::Matrix<double, 15, 15> sqrt_info = Eigen::LLT<Eigen::Matrix<double, 15, 15>>(
                     pre_integration->covariance.inverse()).matrixL().transpose();
-            //sqrt_info.setIdentity();
+//            std::cout << "ham sqrt_info: \n " << sqrt_info<< std::endl;
+
+//            sqrt_info.setIdentity();
             residual = sqrt_info * residual;
 
             if (jacobians) {

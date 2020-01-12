@@ -9,7 +9,7 @@
 #include "vins_estimator/spline/Quaternion.hpp"
 #include "vins_estimator/spline/PoseLocalParameter.hpp"
 #include "vins_estimator/spline/QuaternionLocalParameter.hpp"
-
+#include "vins_estimator/parameters.h"
 
 namespace  JPL {
     struct ImuParam {
@@ -214,7 +214,19 @@ class IntegrationBase{
                  const Eigen::Matrix<T,3,1> &Vj,
                  const Eigen::Matrix<T,3,1> &Baj, const Eigen::Matrix<T,3,1> &Bgj,
                  T **jacobians = NULL) {
-            Eigen::Matrix<T,3,1> G{T(0.0), T(0.0), T(9.8)};
+
+//            std::cout << "JPL Pi: " << Pi.transpose() << std::endl;
+//            std::cout << "JPL Qi: " << Qi.transpose() << std::endl;
+//            std::cout << "JPL Vi: " << Vi.transpose() << std::endl;
+//            std::cout << "JPL Bai: " << Bai.transpose() << std::endl;
+//            std::cout << "JPL Bgi: " << Bgi.transpose() << std::endl;
+//
+//            std::cout << "JPL Pj: " << Pj.transpose() << std::endl;
+//            std::cout << "JPL Qj: " << Qj.transpose() << std::endl;
+//            std::cout << "JPL Vj: " << Vj.transpose() << std::endl;
+//            std::cout << "JPL Baj: " << Baj.transpose() << std::endl;
+//            std::cout << "JPL Bgj: " << Bgj.transpose() << std::endl;
+
             Eigen::Matrix<T, 15, 1> residuals;
 
             Eigen::Matrix<T,3,3> dp_dba = jacobian.block<3, 3>(O_P, O_BA).cast<T>();
@@ -235,6 +247,10 @@ class IntegrationBase{
             Eigen::Matrix<T,3,1> corrected_delta_p = delta_p.cast<T>() + dp_dba * dba + dp_dbg * dbg;
 
 
+//            std::cout << "JPL corrected_delta_q: " << corrected_delta_q.transpose() << std::endl;
+//            std::cout << "JPL corrected_delta_v: " << corrected_delta_v.transpose() << std::endl;
+//            std::cout << "JPL corrected_delta_p: " << corrected_delta_p.transpose() << std::endl;
+
             T _sum_dt = T(sum_dt);
             Eigen::Matrix<T,3,3> R_WIi = quatToRotMat(Qi);
             Eigen::Matrix<T,3,1> temp_p = T(0.5) * G * _sum_dt * _sum_dt + Pj - Pi - Vi * _sum_dt;
@@ -244,6 +260,12 @@ class IntegrationBase{
             residuals.template block<3, 1>(O_V, 0) = R_WIi.transpose() * temp_v - corrected_delta_v;
             residuals.template block<3, 1>(O_BA, 0) = Baj - Bai;
             residuals.template block<3, 1>(O_BG, 0) = Bgj - Bgi;
+
+//            std::cout << "JPL R_WIi: \n" << R_WIi << std::endl;
+//            std::cout << "JPL temp_p: " << temp_p.transpose() << std::endl;
+//            std::cout << "JPL temp_v: " << temp_v.transpose() << std::endl;
+//            std::cout << "JPL residuals: " << residuals.transpose() << std::endl;
+//            std::cout << "JPL residuals v: " << R_WIi.transpose() * temp_v - corrected_delta_v << " " << residuals.template block<3, 1>(O_V, 0).transpose() << std::endl;
 
             if (jacobians != nullptr) {
                 Eigen::Map<Eigen::Matrix<T, 15, 3, Eigen::RowMajor>> J_r_t_WI0(jacobians[0]);
@@ -391,11 +413,13 @@ class IntegrationBase{
 
             Eigen::Matrix<double, 15, 15> sqrt_info = Eigen::LLT<Eigen::Matrix<double, 15, 15>>(
                     pre_integration->covariance.inverse()).matrixL().transpose();
-            sqrt_info.setIdentity();
+
+//            std::cout << "JPL sqrt_info: \n " << sqrt_info<< std::endl;
+//            sqrt_info.setIdentity();
 
             residual = sqrt_info * residual;
 
-            Eigen::Vector3d G{0.0, 0.0, 9.8};
+
         if (jacobians)
         {
 
@@ -404,12 +428,14 @@ class IntegrationBase{
                 Eigen::Map<Eigen::Matrix<double, 15, 7, Eigen::RowMajor>> jacobian_pose_i(jacobians[0]);
                 jacobian_pose_i.setZero();
                 jacobian_pose_i << J_r_t_WI0, J_r_q_WI0;
+                jacobian_pose_i = sqrt_info * jacobian_pose_i;
             }
             if (jacobians[1])
             {
                 Eigen::Map<Eigen::Matrix<double, 15, 9, Eigen::RowMajor>> jacobian_speedbias_i(jacobians[1]);
                 jacobian_speedbias_i.setZero();
                 jacobian_speedbias_i << J_r_v_WI0, J_r_ba0, J_r_bg0;
+                jacobian_speedbias_i = sqrt_info * jacobian_speedbias_i;
 
             }
             if (jacobians[2])
@@ -418,6 +444,7 @@ class IntegrationBase{
                 jacobian_pose_j.setZero();
 
                 jacobian_pose_j << J_r_t_WI1, J_r_q_WI1;
+                jacobian_pose_j = sqrt_info * jacobian_pose_j;
 
             }
             if (jacobians[3])
@@ -426,6 +453,8 @@ class IntegrationBase{
                 jacobian_speedbias_j.setZero();
 
                 jacobian_speedbias_j << J_r_v_WI1, J_r_ba1, J_r_bg1;
+                jacobian_speedbias_j = sqrt_info * jacobian_speedbias_j;
+
             }
         }
 

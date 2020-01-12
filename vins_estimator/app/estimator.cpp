@@ -286,23 +286,23 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image,
         const std_msgs::Header &header) {
     if (solver_flag == NON_LINEAR) {
-        std::vector<std::pair<double, Pose<double>>> meas_vec;
-        std::vector<std::pair<double, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
+        std::vector<std::pair<ros::Time, Pose<double>>> meas_vec;
+        std::vector<std::pair<ros::Time, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
         for (int i =0; i < WINDOW_SIZE+1; i++) {
-            std::pair<double, Pose<double>> meas;
+            std::pair<ros::Time, Pose<double>> meas;
             Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
             T.matrix().topLeftCorner(3,3) = Rs[i];
             T.matrix().topRightCorner(3,1) = Ps[i];
 
-            meas.first = Headers[i].stamp.toSec();
+            meas.first = Headers[i].stamp;
             meas.second = Pose<double>(T);
 
             meas_vec.push_back(meas);
 
             pose_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
 
-            std::pair<double, VectorSpaceSpline<6>::StateVector> bias_meas;
-            bias_meas.first = Headers[i].stamp.toSec();
+            std::pair<ros::Time, VectorSpaceSpline<6>::StateVector> bias_meas;
+            bias_meas.first = Headers[i].stamp;
             bias_meas.second << Bas[i], Bgs[i];
             bias_meas_vec.push_back(bias_meas);
 

@@ -20,17 +20,16 @@ public:
 
     };
 
-    void initialSpline(std::vector<std::pair<double, StateVector>> Meas) {
+    void initialSpline(std::vector<std::pair<ros::Time, StateVector>> Meas) {
         // Build a  least-square problem
         ceres::Problem problem;
 
         for(auto i : Meas){
-//            std::cout<<"-----------------------------------"<<std::endl;
             // add sample
             Base::addElemenTypeSample(i.first,i.second);
 
             // Returns the normalized u value and the lower-bound time index.
-            std::pair<double,unsigned  int> ui = Base::computeUAndTIndex(i.first);
+            std::pair<double,unsigned  int> ui = Base::computeUAndTIndex(i.first.toSec());
             //VectorX u = computeU(ui.first, ui.second, 0);
             double u = ui.first;
             int bidx = ui.second - Base::spline_order() + 1;

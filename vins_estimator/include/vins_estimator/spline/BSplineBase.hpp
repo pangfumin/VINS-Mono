@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include "TypeTraits.hpp"
+#include <ros/time.h>
 
 using real_t = double;
 
@@ -154,24 +155,24 @@ public:
         }
     }
 
-    void addElemenTypeSample(double t, ElementType sample){
+    void addElemenTypeSample(const ros::Time& t, const ElementType& sample){
         if(getControlPointNum() == 0){
-            initialSplineKnot(t);
+            initialSplineKnot(t.toSec());
         }else if(getControlPointNum() >= numCoefficientsRequired(1) ){
-            if(t < t_min()){
+            if(t.toSec() < t_min()){
                 std::cerr<<"[Error] Inserted t is smaller than t_min()！"<<std::endl;
 //                LOG(FATAL) << "Inserted "<<Time(t)<<" is smaller than t_min() "<<Time(t_min())<<std::endl;
-            }else if(t >= t_max()){
+            }else if(t.toSec() >= t_max()){
                 // add new knot and control Points
-                while(t >= t_max()){
+                while(t.toSec() >= t_max()){
                     knots_.push_back(knots_.back() + mTimeInterval); // append one;
                     initialNewControlPoint();
                 }
             }
         }
         // Tricky: do not add point close to t_max
-        if( t_max() - t > 0.0001){
-            mSampleValues.insert(std::pair<double ,ElementType>(t,sample));
+        if( t_max() - t.toSec() > 0.0001){
+            mSampleValues[t] = sample;
         }
         CHECK_EQ(knots_.size() - SplineOrder, getControlPointNum());
 
@@ -242,7 +243,7 @@ private:
     std::vector<real_t> knots_;
 
     std::vector<StateVector> mControlPointsParameter;
-    std::map<double, ElementType> mSampleValues;
+    std::map<ros::Time, ElementType> mSampleValues;
     int mSplineOrder;
     double mTimeInterval;
 };

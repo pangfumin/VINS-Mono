@@ -11,7 +11,7 @@
             : BSplineBase(interval) {
 
     }
-    void PoseSpline::initialPoseSpline(std::vector<std::pair<double, Pose<double>>> Meas) {
+    void PoseSpline::initialPoseSpline(std::vector<std::pair<ros::Time, Pose<double>>> Meas) {
 
         // Build a  least-square problem
         ceres::Problem problem;
@@ -23,7 +23,7 @@
             addElemenTypeSample(i.first, i.second);
 
             // Returns the normalized u value and the lower-bound time index.
-            std::pair<double, unsigned int> ui = computeUAndTIndex(i.first);
+            std::pair<double, unsigned int> ui = computeUAndTIndex(i.first.toSec());
             //VectorX u = computeU(ui.first, ui.second, 0);
             double u = ui.first;
             int bidx = ui.second - spline_order() + 1;

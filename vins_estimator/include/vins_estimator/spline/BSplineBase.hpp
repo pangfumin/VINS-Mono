@@ -203,8 +203,7 @@ public:
         int need_pop = ui.second - (SplineOrder -1);
         for (int i = 0; i < need_pop; i++) {
             knots_.erase(knots_.begin());
-            delete [] mControlPointsParameter.front();
-            mControlPointsParameter.front() = NULL;
+
             mControlPointsParameter.erase(mControlPointsParameter.begin());
         }
 
@@ -216,14 +215,13 @@ public:
     }
 
     inline double* getControlPoint(unsigned int i){
-        return mControlPointsParameter.at(i);
+        return mControlPointsParameter.at(i).data();
     }
 
     void clear() {
         knots_.clear();
         mSampleValues.clear();
-        for (auto i : mControlPointsParameter)
-            delete [] i;
+
 
         mControlPointsParameter.clear();
     }
@@ -235,15 +233,15 @@ public:
 private:
     void initialNewControlPoint(){
         typename TypeTraits<ElementType>::TypeT zero_ele = TypeTraits<ElementType>::zero();
-        double* data = new double[TypeTraits<ElementType>::Dim];
-        memcpy(data, zero_ele.data(),sizeof(double)* TypeTraits<ElementType>::Dim);
+        Eigen::Map<StateVector> data(zero_ele.data());
+
         mControlPointsParameter.push_back(data);
     }
 
     /// The knot sequence used by the B-spline.
     std::vector<real_t> knots_;
 
-    std::vector<double*> mControlPointsParameter;
+    std::vector<StateVector> mControlPointsParameter;
     std::map<double, ElementType> mSampleValues;
     int mSplineOrder;
     double mTimeInterval;

@@ -17,6 +17,8 @@
 #include "vins_estimator/factor/projection_factor.h"
 #include "vins_estimator/factor/projection_td_factor.h"
 #include "vins_estimator/factor/marginalization_factor.h"
+#include "vins_estimator/spline/dynamic_spline_imu_error.h"
+#include "vins_estimator/spline/JPL_imu_error.h"
 
 #include <unordered_map>
 #include <queue>
@@ -91,7 +93,7 @@ class Estimator
     Vector3d back_P0, last_P, last_P0;
     std_msgs::Header Headers[(WINDOW_SIZE + 1)];
 
-    IntegrationBase *pre_integrations[(WINDOW_SIZE + 1)];
+    Hamilton::IntegrationBase *pre_integrations[(WINDOW_SIZE + 1)];
     Vector3d acc_0, gyr_0;
 
     vector<double> dt_buf[(WINDOW_SIZE + 1)];
@@ -129,7 +131,7 @@ class Estimator
     vector<double *> last_marginalization_parameter_blocks;
 
     map<double, ImageFrame> all_image_frame;
-    IntegrationBase *tmp_pre_integration;
+    Hamilton::IntegrationBase *tmp_pre_integration;
 
     //relocalization variable
     bool relocalization_info;

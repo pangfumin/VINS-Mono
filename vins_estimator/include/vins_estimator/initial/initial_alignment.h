@@ -22,7 +22,7 @@ class ImageFrame
         double t;
         Matrix3d R;
         Vector3d T;
-        IntegrationBase *pre_integration;
+        Hamilton::IntegrationBase *pre_integration;
         bool is_key_frame;
 };
 

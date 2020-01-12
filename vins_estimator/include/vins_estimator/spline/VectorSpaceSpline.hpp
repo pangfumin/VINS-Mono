@@ -12,6 +12,7 @@ template <int Dim = 3>
 class VectorSpaceSpline : public BSplineBase<Eigen::Matrix<double, Dim, 1>, 4> {
 public:
     typedef  BSplineBase<Eigen::Matrix<double, Dim, 1>, 4> Base;
+    typedef  typename Base::StateVector StateVector;
     VectorSpaceSpline(): BSplineBase<Eigen::Matrix<double, Dim, 1>, 4>(1.0){
 
     };
@@ -19,12 +20,12 @@ public:
 
     };
 
-    void initialSpline(std::vector<std::pair<double,Eigen::Matrix<double, Dim, 1>>> Meas) {
+    void initialSpline(std::vector<std::pair<double, StateVector>> Meas) {
         // Build a  least-square problem
         ceres::Problem problem;
 
         for(auto i : Meas){
-            //std::cout<<"-----------------------------------"<<std::endl;
+//            std::cout<<"-----------------------------------"<<std::endl;
             // add sample
             Base::addElemenTypeSample(i.first,i.second);
 
@@ -44,6 +45,8 @@ public:
             Eigen::Map<Eigen::Matrix<double,Dim,1>> CpMap2(cp2);
             Eigen::Map<Eigen::Matrix<double,Dim,1>> CpMap3(cp3);
 
+
+
             VectorSplineSampleError<Dim>* vectorSplineSampleError
                     = new VectorSplineSampleError<Dim>(u,i.second);
 //
@@ -56,6 +59,12 @@ public:
             problem.AddParameterBlock(cp3, Dim);
 
             problem.AddResidualBlock(vectorSplineSampleError, NULL, cp0, cp1, cp2, cp3);
+
+//            Eigen::VectorXd residual(6);
+//            double* parameters[4] = {cp0, cp1, cp2, cp3};
+//            vectorSplineSampleError->Evaluate(parameters,residual.data(), NULL);
+//            std::cout << "residula: " << residual.transpose() << std::endl;
+
 
         }
         //std::cout<<"ParameterNum: "<<problem.NumParameterBlocks()<<std::endl;

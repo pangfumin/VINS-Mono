@@ -7,8 +7,9 @@ Estimator::Estimator(): f_manager{Rs},
     ROS_INFO("init begins");
     clearState();
 
-    pose_spline_ = std::make_shared<PoseSpline>(0.3);
-    bias_spline_ = std::make_shared<VectorSpaceSpline<6>>(0.3);
+    double spline_dt = 0.15;
+    pose_spline_ = std::make_shared<PoseSpline>(spline_dt);
+    bias_spline_ = std::make_shared<VectorSpaceSpline<6>>(spline_dt);
 }
 
 void Estimator::setParameter()
@@ -286,6 +287,7 @@ void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix
         const std_msgs::Header &header) {
     if (solver_flag == NON_LINEAR) {
         std::vector<std::pair<double, Pose<double>>> meas_vec;
+        std::vector<std::pair<double, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
         for (int i =0; i < WINDOW_SIZE+1; i++) {
             std::pair<double, Pose<double>> meas;
             Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
@@ -297,11 +299,22 @@ void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix
 
             meas_vec.push_back(meas);
 
+            pose_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
+
+            std::pair<double, VectorSpaceSpline<6>::StateVector> bias_meas;
+            bias_meas.first = Headers[i].stamp.toSec();
+            bias_meas.second << Bas[i], Bgs[i];
+            bias_meas_vec.push_back(bias_meas);
+
+            bias_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
 
         }
 
-        pose_spline_->clear();
+        pose_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+        bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+
         pose_spline_->initialPoseSpline(meas_vec);
+        bias_spline_->initialSpline(bias_meas_vec);
 
         for (int i =0; i < WINDOW_SIZE+1; i++) {
             std::pair<double, Pose<double>> meas;
@@ -309,8 +322,12 @@ void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix
             T.matrix().topLeftCorner(3,3) = Rs[i];
             T.matrix().topRightCorner(3,1) = Ps[i];
 
+            std::pair<double, VectorSpaceSpline<6>::StateVector> bias_meas;
+            bias_meas.first = Headers[i].stamp.toSec();
+            bias_meas.second << Bas[i], Bgs[i];
 
             auto eva_pose = pose_spline_->evalPoseSpline(Headers[i].stamp.toSec());
+            auto eva_bias = bias_spline_->evaluateSpline(Headers[i].stamp.toSec());
 
 
             std::cout << "i: " << i << std::endl;
@@ -318,6 +335,9 @@ void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix
                         << " " << Pose<double>(T).parameters().tail(4).norm() << std::endl;
             std::cout << "eval: " << eva_pose.parameters().transpose()
                         << " " <<  eva_pose.parameters().tail(4).norm() << std::endl;
+
+            std::cout << "bias true: " << bias_meas.second.transpose() << std::endl;
+            std::cout << "bias eval: " << eva_bias.transpose() << std::endl;
         }
 
         

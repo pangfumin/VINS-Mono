@@ -11,6 +11,7 @@ using real_t = double;
 template <typename ElementType, int SplineOrder>
 class BSplineBase {
 public:
+    typedef Eigen::Matrix<double,TypeTraits<ElementType>::Dim,1> StateVector;
     BSplineBase(double interval):mSplineOrder(SplineOrder),
                                  mTimeInterval(interval) {};
     virtual ~BSplineBase() {
@@ -195,6 +196,20 @@ public:
         CHECK_EQ(knots_.size() - SplineOrder, getControlPointNum());
 
     }
+
+    void removeControlPointsUntil(double t){
+        if (knots_.size() < numKnotsRequired(1)) return;
+        std::pair<real_t,int> ui = computeUAndTIndex(t);
+        int need_pop = ui.second - (SplineOrder -1);
+        for (int i = 0; i < need_pop; i++) {
+            knots_.erase(knots_.begin());
+            delete [] mControlPointsParameter.front();
+            mControlPointsParameter.front() = NULL;
+            mControlPointsParameter.erase(mControlPointsParameter.begin());
+        }
+
+    }
+
 
     inline size_t getControlPointNum(){
         return mControlPointsParameter.size();

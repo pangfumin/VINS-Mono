@@ -25,7 +25,7 @@
         for(auto i : Meas){
             //std::cout<<"-----------------------------------"<<std::endl;
             // add sample
-            addElemenTypeSample(i.first,i.second);
+//            addElemenTypeSample(i.first,i.second);
 
             // Returns the normalized u value and the lower-bound time index.
             std::pair<double,unsigned  int> ui = computeUAndTIndex(i.first);

@@ -20,7 +20,7 @@
         for (auto i : Meas) {
             //std::cout<<"-----------------------------------"<<std::endl;
             // add sample
-            addElemenTypeSample(i.first, i.second);
+            //addElemenTypeSample(i.first, i.second);
 
             // Returns the normalized u value and the lower-bound time index.
             std::pair<double, unsigned int> ui = computeUAndTIndex(i.first.toSec());
@@ -52,10 +52,9 @@
         //problem.AddResidualBlock(cost_function, NULL, &x);
         // Run the solver!
         ceres::Solver::Options options;
-        options.minimizer_progress_to_stdout = true;
         options.max_solver_time_in_seconds = 30;
         options.linear_solver_type = ceres::SPARSE_SCHUR;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-4;
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);

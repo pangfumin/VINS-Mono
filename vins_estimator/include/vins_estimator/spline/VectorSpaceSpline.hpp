@@ -26,7 +26,7 @@ public:
 
         for(auto i : Meas){
             // add sample
-            Base::addElemenTypeSample(i.first,i.second);
+            //Base::addElemenTypeSample(i.first,i.second);
 
             // Returns the normalized u value and the lower-bound time index.
             std::pair<double,unsigned  int> ui = Base::computeUAndTIndex(i.first.toSec());
@@ -78,7 +78,7 @@ public:
         options.minimizer_progress_to_stdout = true;
         options.max_solver_time_in_seconds = 30;
         options.linear_solver_type = ceres::SPARSE_SCHUR;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
         options.parameter_tolerance = 1e-4;
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);

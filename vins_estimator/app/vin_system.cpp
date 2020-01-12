@@ -494,7 +494,7 @@ void VinSystem::process() {
             std_msgs::Header header1;
             header1.stamp = img_msg.timeStamp;
             estimator_->processImage(image, header1);
-            estimator_->processImageSpline(image, header1);
+            //estimator_->processImageSpline(image, header1);
 
             double whole_t = t_s.toc();
             printStatistics(*estimator_, whole_t);

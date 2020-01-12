@@ -50,6 +50,7 @@ class Estimator
     bool relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l);
     void slideWindow();
     void solveOdometry();
+    void optimizationSpline();
     void slideWindowNew();
     void slideWindowOld();
     void optimization();
@@ -148,12 +149,7 @@ class Estimator
 
 
     /// Spline
-
     std::shared_ptr<PoseSpline> pose_spline_;
     std::shared_ptr<VectorSpaceSpline<6>> bias_spline_;
-
-    void processImageSpline(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image, const std_msgs::Header &header);
-
-
 
 };

@@ -155,28 +155,7 @@ public:
         }
     }
 
-    void addElemenTypeSample(const ros::Time& t, const ElementType& sample){
-        if(getControlPointNum() == 0){
-            initialSplineKnot(t.toSec());
-        }else if(getControlPointNum() >= numCoefficientsRequired(1) ){
-            if(t.toSec() < t_min()){
-                std::cerr<<"[Error] Inserted t is smaller than t_min()！"<<std::endl;
-//                LOG(FATAL) << "Inserted "<<Time(t)<<" is smaller than t_min() "<<Time(t_min())<<std::endl;
-            }else if(t.toSec() >= t_max()){
-                // add new knot and control Points
-                while(t.toSec() >= t_max()){
-                    knots_.push_back(knots_.back() + mTimeInterval); // append one;
-                    initialNewControlPoint();
-                }
-            }
-        }
-        // Tricky: do not add point close to t_max
-        if( t_max() - t.toSec() > 0.0001){
-            mSampleValues[t] = sample;
-        }
-        CHECK_EQ(knots_.size() - SplineOrder, getControlPointNum());
 
-    }
 
     void addControlPointsUntil(double t){
         if(getControlPointNum() == 0){
@@ -221,7 +200,6 @@ public:
 
     void clear() {
         knots_.clear();
-        mSampleValues.clear();
         mControlPointsParameter.clear();
     }
 
@@ -229,9 +207,6 @@ public:
         return knots_;
     }
 
-    std::map<ros::Time, ElementType> getSamples() {
-        return mSampleValues;
-    }
 
 
 private:
@@ -246,7 +221,6 @@ private:
     std::vector<real_t> knots_;
 
     std::vector<StateVector> mControlPointsParameter;
-    std::map<ros::Time, ElementType> mSampleValues;
     int mSplineOrder;
     double mTimeInterval;
 };

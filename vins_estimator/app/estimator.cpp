@@ -255,6 +255,9 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
     {
         TicToc t_solve;
         solveOdometry();
+
+
+
         ROS_DEBUG("solver costs: %fms", t_solve.toc());
 
         if (failureDetection())
@@ -280,73 +283,6 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         last_P = Ps[WINDOW_SIZE];
         last_R0 = Rs[0];
         last_P0 = Ps[0];
-    }
-}
-
-void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> &image,
-        const std_msgs::Header &header) {
-    if (solver_flag == NON_LINEAR) {
-        std::vector<std::pair<ros::Time, Pose<double>>> meas_vec;
-        std::vector<std::pair<ros::Time, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
-        for (int i =0; i < WINDOW_SIZE+1; i++) {
-            std::pair<ros::Time, Pose<double>> meas;
-            Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-            T.matrix().topLeftCorner(3,3) = Rs[i];
-            T.matrix().topRightCorner(3,1) = Ps[i];
-
-            meas.first = Headers[i].stamp;
-            meas.second = Pose<double>(T);
-
-            meas_vec.push_back(meas);
-
-            pose_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
-
-            std::pair<ros::Time, VectorSpaceSpline<6>::StateVector> bias_meas;
-            bias_meas.first = Headers[i].stamp;
-            bias_meas.second << Bas[i], Bgs[i];
-            bias_meas_vec.push_back(bias_meas);
-
-            bias_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
-
-        }
-
-        pose_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
-        bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
-
-        pose_spline_->initialPoseSpline(meas_vec);
-        bias_spline_->initialSpline(bias_meas_vec);
-
-
-        std::cout << "pose samples: " << pose_spline_->getSamples().size() << std::endl;
-
-        for (int i =0; i < WINDOW_SIZE+1; i++) {
-            std::pair<double, Pose<double>> meas;
-            Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
-            T.matrix().topLeftCorner(3,3) = Rs[i];
-            T.matrix().topRightCorner(3,1) = Ps[i];
-
-            std::pair<double, VectorSpaceSpline<6>::StateVector> bias_meas;
-            bias_meas.first = Headers[i].stamp.toSec();
-            bias_meas.second << Bas[i], Bgs[i];
-
-            auto eva_pose = pose_spline_->evalPoseSpline(Headers[i].stamp.toSec());
-            auto eva_bias = bias_spline_->evaluateSpline(Headers[i].stamp.toSec());
-
-
-            std::cout << "i: " << i << std::endl;
-            std::cout << "true: " << Pose<double>(T).parameters().transpose()
-                        << " " << Pose<double>(T).parameters().tail(4).norm() << std::endl;
-            std::cout << "eval: " << eva_pose.parameters().transpose()
-                        << " " <<  eva_pose.parameters().tail(4).norm() << std::endl;
-
-            std::cout << "bias true: " << bias_meas.second.transpose() << std::endl;
-            std::cout << "bias eval: " << eva_bias.transpose() << std::endl;
-        }
-
-        
-
-
-
     }
 }
 
@@ -616,7 +552,55 @@ void Estimator::solveOdometry()
         f_manager.triangulate(Ps, tic, ric);
         ROS_DEBUG("triangulation costs %f", t_tri.toc());
         optimization();
+        optimizationSpline();
+
+
     }
+}
+
+void Estimator::optimizationSpline() {
+    // 1. init pose spline and bias spline
+
+    std::vector<std::pair<ros::Time, Pose<double>>> meas_vec;
+    std::vector<std::pair<ros::Time, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
+    for (int i =0; i < WINDOW_SIZE+1; i++) {
+        std::pair<ros::Time, Pose<double>> meas;
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+        T.matrix().topLeftCorner(3,3) = Rs[i];
+        T.matrix().topRightCorner(3,1) = Ps[i];
+
+        meas.first = Headers[i].stamp;
+        meas.second = Pose<double>(T);
+
+        meas_vec.push_back(meas);
+
+        pose_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
+
+        std::pair<ros::Time, VectorSpaceSpline<6>::StateVector> bias_meas;
+        bias_meas.first = Headers[i].stamp;
+        bias_meas.second << Bas[i], Bgs[i];
+        bias_meas_vec.push_back(bias_meas);
+
+        bias_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
+
+    }
+
+    pose_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+    bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+
+    pose_spline_->initialPoseSpline(meas_vec);
+    bias_spline_->initialSpline(bias_meas_vec);
+
+    std::cout << "pose cp: " << pose_spline_->getControlPointNum() << std::endl;
+    std::cout << "bias cp: " << bias_spline_->getControlPointNum() << std::endl;
+
+    // 2. add factors
+
+
+    // 3. optimization
+
+
+
 }
 
 void Estimator::vector2double()

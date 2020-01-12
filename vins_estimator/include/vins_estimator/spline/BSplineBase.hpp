@@ -222,14 +222,17 @@ public:
     void clear() {
         knots_.clear();
         mSampleValues.clear();
-
-
         mControlPointsParameter.clear();
     }
 
-    std::vector<double> knots() {
+    std::vector<double> getKnots() {
         return knots_;
     }
+
+    std::map<ros::Time, ElementType> getSamples() {
+        return mSampleValues;
+    }
+
 
 private:
     void initialNewControlPoint(){

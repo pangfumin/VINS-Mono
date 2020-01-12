@@ -59,7 +59,7 @@
         options.parameter_tolerance = 1e-4;
         ceres::Solver::Summary summary;
         ceres::Solve(options, &problem, &summary);
-        std::cout << summary.FullReport() << std::endl;
+        std::cout << summary.BriefReport() << std::endl;
 
     }
 

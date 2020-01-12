@@ -316,6 +316,9 @@ void Estimator::processImageSpline(const map<int, vector<pair<int, Eigen::Matrix
         pose_spline_->initialPoseSpline(meas_vec);
         bias_spline_->initialSpline(bias_meas_vec);
 
+
+        std::cout << "pose samples: " << pose_spline_->getSamples().size() << std::endl;
+
         for (int i =0; i < WINDOW_SIZE+1; i++) {
             std::pair<double, Pose<double>> meas;
             Eigen::Matrix4d T = Eigen::Matrix4d::Identity();

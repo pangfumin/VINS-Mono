@@ -216,13 +216,13 @@ class IntegrationBase{
                  T **jacobians = NULL) {
 
 //            std::cout << "JPL Pi: " << Pi.transpose() << std::endl;
-//            std::cout << "JPL Qi: " << Qi.transpose() << std::endl;
+            std::cout << "JPL Qi: " << Qi.transpose() << std::endl;
 //            std::cout << "JPL Vi: " << Vi.transpose() << std::endl;
 //            std::cout << "JPL Bai: " << Bai.transpose() << std::endl;
 //            std::cout << "JPL Bgi: " << Bgi.transpose() << std::endl;
 //
 //            std::cout << "JPL Pj: " << Pj.transpose() << std::endl;
-//            std::cout << "JPL Qj: " << Qj.transpose() << std::endl;
+            std::cout << "JPL Qj: " << Qj.transpose() << std::endl;
 //            std::cout << "JPL Vj: " << Vj.transpose() << std::endl;
 //            std::cout << "JPL Baj: " << Baj.transpose() << std::endl;
 //            std::cout << "JPL Bgj: " << Bgj.transpose() << std::endl;
@@ -247,7 +247,7 @@ class IntegrationBase{
             Eigen::Matrix<T,3,1> corrected_delta_p = delta_p.cast<T>() + dp_dba * dba + dp_dbg * dbg;
 
 
-//            std::cout << "JPL corrected_delta_q: " << corrected_delta_q.transpose() << std::endl;
+            std::cout << "JPL corrected_delta_q: " << corrected_delta_q.transpose() << std::endl;
 //            std::cout << "JPL corrected_delta_v: " << corrected_delta_v.transpose() << std::endl;
 //            std::cout << "JPL corrected_delta_p: " << corrected_delta_p.transpose() << std::endl;
 
@@ -265,7 +265,7 @@ class IntegrationBase{
 //            std::cout << "JPL temp_p: " << temp_p.transpose() << std::endl;
 //            std::cout << "JPL temp_v: " << temp_v.transpose() << std::endl;
 //            std::cout << "JPL residuals: " << residuals.transpose() << std::endl;
-//            std::cout << "JPL residuals v: " << R_WIi.transpose() * temp_v - corrected_delta_v << " " << residuals.template block<3, 1>(O_V, 0).transpose() << std::endl;
+            std::cout << "JPL residuals q: " << residuals.template block<3, 1>(O_R, 0).transpose() << std::endl;
 
             if (jacobians != nullptr) {
                 Eigen::Map<Eigen::Matrix<T, 15, 3, Eigen::RowMajor>> J_r_t_WI0(jacobians[0]);

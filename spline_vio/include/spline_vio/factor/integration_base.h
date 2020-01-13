@@ -181,13 +181,13 @@ namespace Hamilton {
             Eigen::Matrix<double, 15, 1> residuals;
 //
 //            std::cout << "ham Pi: " << Pi.transpose() << std::endl;
-//            std::cout << "ham Qi: " << Qi.coeffs().transpose() << std::endl;
+            std::cout << "ham Qi: " << Qi.coeffs().transpose() << std::endl;
 //            std::cout << "ham Vi: " << Vi.transpose() << std::endl;
 //            std::cout << "ham Bai: " << Bai.transpose() << std::endl;
 //            std::cout << "ham Bgi: " << Bgi.transpose() << std::endl;
 //
 //            std::cout << "ham Pj: " << Pj.transpose() << std::endl;
-//            std::cout << "ham Qj: " << Qj.coeffs().transpose() << std::endl;
+            std::cout << "ham Qj: " << Qj.coeffs().transpose() << std::endl;
 //            std::cout << "ham Vj: " << Vj.transpose() << std::endl;
 //            std::cout << "ham Baj: " << Baj.transpose() << std::endl;
 //            std::cout << "ham Bgj: " << Bgj.transpose() << std::endl;
@@ -208,7 +208,7 @@ namespace Hamilton {
             Eigen::Vector3d corrected_delta_v = delta_v + dv_dba * dba + dv_dbg * dbg;
             Eigen::Vector3d corrected_delta_p = delta_p + dp_dba * dba + dp_dbg * dbg;
 
-//            std::cout << "ham corrected_delta_q: " << corrected_delta_q.coeffs().transpose() << std::endl;
+            std::cout << "ham corrected_delta_q: " << corrected_delta_q.coeffs().transpose() << std::endl;
 //            std::cout << "ham corrected_delta_v: " << corrected_delta_v.transpose() << std::endl;
 //            std::cout << "ham corrected_delta_p: " << corrected_delta_p.transpose() << std::endl;
 
@@ -227,7 +227,7 @@ namespace Hamilton {
 //            std::cout << "ham temp_p: " << temp_p.transpose() << std::endl;
 //            std::cout << "ham temp_v: " << temp_v.transpose() << std::endl;
 //            std::cout << "ham residuals: " << residuals.transpose() << std::endl;
-//            std::cout << "ham residuals v: " << R_WIi.transpose() * temp_v - corrected_delta_v<< " " << residuals.block<3, 1>(O_V, 0).transpose() << std::endl;
+            std::cout << "ham residuals q: " << residuals.block<3, 1>(O_R, 0).transpose() << std::endl;
             return residuals;
         }
 

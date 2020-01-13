@@ -153,6 +153,7 @@ class Estimator
 
 
     /// Spline
+    const double spline_dt ;
     std::shared_ptr<PoseSpline> pose_spline_;
     std::shared_ptr<VectorSpaceSpline<6>> bias_spline_;
 

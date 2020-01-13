@@ -1,15 +1,17 @@
 #include "estimator.h"
 #include "spline_vio/spline/JPL_imu_error.h"
+#include "spline_vio/spline/dynamic_spline_imu_error.h"
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),
                         tmp_pre_integration(NULL),
-                        tmp_JPL_pre_integration(nullptr)
+                        tmp_JPL_pre_integration(nullptr),
+                        spline_dt(0.15)
 {
     ROS_INFO("init begins");
     clearState();
 
-    double spline_dt = 0.15;
+
     pose_spline_ = std::make_shared<PoseSpline>(spline_dt);
     bias_spline_ = std::make_shared<VectorSpaceSpline<6>>(spline_dt);
 }
@@ -895,6 +897,37 @@ void Estimator::optimization()
     }
 
     // IMU factor
+
+    std::vector<std::pair<ros::Time, Pose<double>>> meas_vec;
+    std::vector<std::pair<ros::Time, VectorSpaceSpline<6>::StateVector>> bias_meas_vec;
+    for (int i =0; i < WINDOW_SIZE+1; i++) {
+        std::pair<ros::Time, Pose<double>> meas;
+        Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
+        T.matrix().topLeftCorner(3,3) = Rs[i];
+        T.matrix().topRightCorner(3,1) = Ps[i];
+
+        meas.first = Headers[i].stamp;
+        meas.second = Pose<double>(T);
+
+        meas_vec.push_back(meas);
+
+        pose_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
+
+        std::pair<ros::Time, VectorSpaceSpline<6>::StateVector> bias_meas;
+        bias_meas.first = Headers[i].stamp;
+        bias_meas.second << Bas[i], Bgs[i];
+        bias_meas_vec.push_back(bias_meas);
+
+        bias_spline_->addControlPointsUntil(Headers[i].stamp.toSec());
+
+    }
+
+    pose_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+    bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
+
+    pose_spline_->initialPoseSpline(meas_vec);
+    bias_spline_->initialSpline(bias_meas_vec);
+
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
         int j = i + 1;
@@ -916,7 +949,7 @@ void Estimator::optimization()
 
 
 
-        JPL::IMUFactor* JPL_imu_factor = new JPL::IMUFactor(JPL_pre_integrations[j].get());
+        std::shared_ptr<JPL::IMUFactor> JPL_imu_factor = std::make_shared<JPL::IMUFactor>(JPL_pre_integrations[j].get());
         Eigen::Matrix4d T = Eigen::Matrix4d::Identity();
         T.matrix().topLeftCorner(3,3) = Rs[i];
         T.matrix().topRightCorner(3,1) = Ps[i];
@@ -925,7 +958,14 @@ void Estimator::optimization()
         T.matrix().topRightCorner(3,1) = Ps[j];
         Pose<double> JPL_T_j(T);
 
+        Pose<double> spline_T_i = pose_spline_->evalPoseSpline(Headers[i].stamp.toSec());
+        Pose<double> spline_T_j = pose_spline_->evalPoseSpline(Headers[j].stamp.toSec());
+        Eigen::Vector3d spline_v_i = pose_spline_->evalLinearVelocity(Headers[i].stamp.toSec());
+        Eigen::Vector3d spline_v_j = pose_spline_->evalLinearVelocity(Headers[j].stamp.toSec());
         Eigen::Matrix<double,15,1> JPL_residuals, hamilton_residuals;
+
+
+
         double* JPL_parameters[4] = {JPL_T_i.data(), para_SpeedBias[i], JPL_T_j.data(), para_SpeedBias[j]};
         double* hamilton_parameters[4] = {para_Pose[i], para_SpeedBias[i], para_Pose[j], para_SpeedBias[j]};
 
@@ -934,8 +974,58 @@ void Estimator::optimization()
         JPL_imu_factor->Evaluate(JPL_parameters, JPL_residuals.data(), NULL);
         imu_factor->Evaluate(hamilton_parameters, hamilton_residuals.data(), NULL);
 
-        std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
-        std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+
+
+//        std::cout << "JPL_T_i: " << JPL_T_i.parameters().transpose() << std::endl;
+//        std::cout << "spl_T_i: " << spline_T_i.parameters().transpose() << " " << Vs[i].transpose() << std::endl;
+//        std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose() << std::endl;
+//        std::cout << "spl_T_j: " << spline_T_j.parameters().transpose() << " " << Vs[j].transpose()<< std::endl;
+
+
+        const std::pair<double,uint> ui_i = pose_spline_->computeUAndTIndex(Headers[i].stamp.toSec());
+        const std::pair<double,uint> ui_j = pose_spline_->computeUAndTIndex(Headers[j].stamp.toSec());
+
+        if(ui_i.second == ui_j.second) {
+            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
+            std::cout << "ui_i.second: " << 0 << std::endl;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
+
+            DynamicSplineIMUFactor<4>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<4>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[8] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
+                                            bias_cp0, bias_cp1, bias_cp2, bias_cp3};
+            Eigen::VectorXd spline_residual(15);
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+
+        } else if (ui_j.second - ui_i.second == 1) {
+            std::cout << "ui_i.second: " << 1 << std::endl;
+
+        } else if (ui_j.second - ui_i.second == 2) {
+            std::cout << "ui_i.second: " << 2 << std::endl;
+
+        } else if (ui_j.second - ui_i.second == 3) {
+            std::cout << "ui_i.second: " << 3 << std::endl;
+
+        } else {
+            std::cout << "ui_i.second: " << ">4" << std::endl;
+
+        }
+
+
+//        DynamicSplineIMUFactor* dynamicSplineImuFactor = new DynamicSplineIMUFactor(JPL_imu_factor, spline_dt);
 
 
     }

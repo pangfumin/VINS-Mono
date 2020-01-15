@@ -3,10 +3,17 @@ package spline_vio.proto;
 
 
 message PoseSpline {
-  optional BaseSpline base_spline = 1;
-  optional int64 sample_cnt = 2;
-  repeated double sample_ts = 3;
-  repeated double sample_value = 4;
+  optional int64 spline_order = 1;
+  optional double spline_dt = 2;
+  optional int64 knot_cnt = 3;
+  repeated double knot = 4;
+  optional int64 control_point_cnt = 5;
+  repeated double control_point = 6;
+
+
+  optional int64 sample_cnt = 7;
+  repeated double sample_ts = 8;
+  repeated double sample_value = 9;
 
 }
 

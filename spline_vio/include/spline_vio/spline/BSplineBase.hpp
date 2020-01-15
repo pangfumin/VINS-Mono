@@ -262,7 +262,6 @@ public:
 
 
 
-private:
     void initialNewControlPoint(){
         typename TypeTraits<ElementType>::TypeT zero_ele = TypeTraits<ElementType>::zero();
         Eigen::Map<StateVector> data(zero_ele.data());

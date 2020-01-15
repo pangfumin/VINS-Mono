@@ -14,60 +14,65 @@
     void PoseSpline::initialPoseSpline(const std::vector<std::pair<ros::Time, Pose<double>>>& Meas) {
 
         samples_ = Meas;
-        // Build a  least-square problem
-        ceres::Problem problem;
-        PoseLocalParameter *poseLocalParameter = new PoseLocalParameter;
-        //std::cout<<"Meas NUM: "<<Meas.size()<<std::endl;
-        for (auto i : Meas) {
-            //std::cout<<"-----------------------------------"<<std::endl;
-            // add sample
-            //addElemenTypeSample(i.first, i.second);
-
-            // Returns the normalized u value and the lower-bound time index.
-            std::pair<double, unsigned int> ui = computeUAndTIndex(i.first.toSec());
-            //VectorX u = computeU(ui.first, ui.second, 0);
-            double u = ui.first;
-            int bidx = ui.second - spline_order() + 1;
-
-            double *cp0 = getControlPoint(bidx);
-            double *cp1 = getControlPoint(bidx + 1);
-            double *cp2 = getControlPoint(bidx + 2);
-            double *cp3 = getControlPoint(bidx + 3);
-
-            PoseSplineSampleError* poseSampleFunctor = new PoseSplineSampleError(u,i.second);
-
-            problem.AddParameterBlock(cp0,7,poseLocalParameter);
-            problem.AddParameterBlock(cp1,7,poseLocalParameter);
-            problem.AddParameterBlock(cp2,7,poseLocalParameter);
-            problem.AddParameterBlock(cp3,7,poseLocalParameter);
-
-            problem.AddResidualBlock(poseSampleFunctor, NULL, cp0, cp1, cp2, cp3);
-
-        }
-        //std::cout<<"ParameterNum: "<<problem.NumParameterBlocks()<<std::endl;
-        //std::cout<<"ResidualNUM: "<<problem.NumResiduals()<<std::endl;
-
-
-        // Set up the only cost function (also known as residual).
-        //ceres::CostFunction* cost_function = new QuadraticCostFunction;
-        //problem.AddResidualBlock(cost_function, NULL, &x);
-        // Run the solver!
-        ceres::Solver::Options options;
-        options.max_solver_time_in_seconds = 30;
-        options.linear_solver_type = ceres::SPARSE_SCHUR;
-        options.minimizer_progress_to_stdout = false;
-        options.parameter_tolerance = 1e-4;
-        ceres::Solver::Summary summary;
-        ceres::Solve(options, &problem, &summary);
-        std::cout << summary.BriefReport() << std::endl;
+        initialPoseSpline();
 
     }
 
 
+void PoseSpline::initialPoseSpline()  {
+    // Build a  least-square problem
+    ceres::Problem problem;
+    PoseLocalParameter *poseLocalParameter = new PoseLocalParameter;
+    //std::cout<<"Meas NUM: "<<Meas.size()<<std::endl;
+    for (auto i : samples_) {
+        //std::cout<<"-----------------------------------"<<std::endl;
+        // add sample
+        //addElemenTypeSample(i.first, i.second);
+
+        // Returns the normalized u value and the lower-bound time index.
+        std::pair<double, unsigned int> ui = computeUAndTIndex(i.first.toSec());
+        //VectorX u = computeU(ui.first, ui.second, 0);
+        double u = ui.first;
+        int bidx = ui.second - spline_order() + 1;
+
+        double *cp0 = getControlPoint(bidx);
+        double *cp1 = getControlPoint(bidx + 1);
+        double *cp2 = getControlPoint(bidx + 2);
+        double *cp3 = getControlPoint(bidx + 3);
+
+        PoseSplineSampleError* poseSampleFunctor = new PoseSplineSampleError(u,i.second);
+
+        problem.AddParameterBlock(cp0,7,poseLocalParameter);
+        problem.AddParameterBlock(cp1,7,poseLocalParameter);
+        problem.AddParameterBlock(cp2,7,poseLocalParameter);
+        problem.AddParameterBlock(cp3,7,poseLocalParameter);
+
+        problem.AddResidualBlock(poseSampleFunctor, NULL, cp0, cp1, cp2, cp3);
+
+    }
+    //std::cout<<"ParameterNum: "<<problem.NumParameterBlocks()<<std::endl;
+    //std::cout<<"ResidualNUM: "<<problem.NumResiduals()<<std::endl;
+
+
+    // Set up the only cost function (also known as residual).
+    //ceres::CostFunction* cost_function = new QuadraticCostFunction;
+    //problem.AddResidualBlock(cost_function, NULL, &x);
+    // Run the solver!
+    ceres::Solver::Options options;
+    options.max_solver_time_in_seconds = 30;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
+    options.minimizer_progress_to_stdout = false;
+    options.parameter_tolerance = 1e-4;
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+    std::cout << summary.BriefReport() << std::endl;
+
+}
 
 
 
-    Pose<double> PoseSpline::evalPoseSpline(real_t t ){
+
+Pose<double> PoseSpline::evalPoseSpline(real_t t ){
         std::pair<double,unsigned  int> ui = computeUAndTIndex(t);
         double u = ui.first;
         unsigned int bidx = ui.second - spline_order() + 1;
@@ -173,7 +178,30 @@
         return QSUtility::w_in_body_frame<double>(Q_WI,dot_Q_WI);
     }
 void PoseSpline::serialize(spline_vio::proto::PoseSpline* proto) const {
-    base_t::serialize(const_cast<spline_vio::proto::BaseSpline* const>(&proto->base_spline()));
+    std::cout << "posespline class serilaization" << std::endl;
+
+//    base_t::serialize(const_cast<spline_vio::proto::BaseSpline* const>(&proto->base_spline()));
+    proto->set_spline_dt(mTimeInterval);
+    proto->set_spline_order(mSplineOrder);
+
+
+    proto->set_knot_cnt(knots_.size());
+    proto->set_control_point_cnt(mControlPointsParameter.size());
+    Eigen::VectorXd knots_eigen(knots_.size());
+    for (int i = 0; i < knots_.size(); i++) {
+        knots_eigen(i) = knots_.at(i);
+
+    }
+    common::eigen_proto::serialize(knots_eigen, proto->mutable_knot());
+
+    Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic >
+            cps_eigen(int(TypeTraits<ElementType>::Dim), mControlPointsParameter.size());
+    for (int i = 0; i < mControlPointsParameter.size(); i ++) {
+        cps_eigen.col(i) = mControlPointsParameter.at(i);
+    }
+    common::eigen_proto::serialize(cps_eigen, proto->mutable_control_point());
+
+
 
     proto->set_sample_cnt(samples_.size());
     Eigen::VectorXd samples_ts_eigtn(samples_.size());
@@ -190,7 +218,30 @@ void PoseSpline::serialize(spline_vio::proto::PoseSpline* proto) const {
 }
 void PoseSpline::deserialize(
         const spline_vio::proto::PoseSpline& proto) {
-    base_t::deserialize(proto.base_spline());
+    std::cout << "posespline class deserilaization" << std::endl;
+
+    mSplineOrder = proto.spline_order();
+    mTimeInterval = proto.spline_dt();
+    int64_t knots_cnt = proto.knot_cnt();
+    const int64_t cp_cnt = proto.control_point_cnt();
+    Eigen::VectorXd knots_eigen(knots_cnt);
+    common::eigen_proto::deserialize( proto.knot(), &knots_eigen);
+    knots_.clear();
+    mControlPointsParameter.clear();
+
+    for (int i = 0; i <knots_cnt ; i++ ) {
+        knots_.push_back(knots_eigen(i));
+    }
+
+    Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic >
+            cps_eigen(int(TypeTraits<ElementType>::Dim), cp_cnt);
+    common::eigen_proto::deserialize( proto.control_point(), &cps_eigen);
+
+    for (int i = 0; i < cp_cnt; i++) {
+        mControlPointsParameter.push_back(cps_eigen.col(i));
+    }
+
+//    base_t::deserialize(proto.base_spline());
     int sample_cnt = proto.sample_cnt();
     Eigen::VectorXd samples_ts_eigtn(sample_cnt);
     Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic>
@@ -208,6 +259,9 @@ void PoseSpline::deserialize(
         double ts = samples_ts_eigtn(i);
         samples_.push_back(std::make_pair(ros::Time(ts), pose));
     }
+
+
+
 
 }
 

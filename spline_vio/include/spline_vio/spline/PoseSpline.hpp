@@ -20,6 +20,7 @@ public:
     virtual ~PoseSpline() {}
 
     void initialPoseSpline(const std::vector<std::pair<ros::Time, Pose<double>>>& Meas) ;
+    void initialPoseSpline() ;
 
     Pose<double> evalPoseSpline(real_t t);
     Eigen::Vector3d evalLinearVelocity(real_t t );
@@ -27,15 +28,14 @@ public:
     Eigen::Vector3d evalLinearAccelerator(real_t t, const Eigen::Vector3d& gravity);
     Eigen::Vector3d evalOmega(real_t t);
 
-    void serialize(spline_vio::proto::PoseSpline* proto) const ;
-    void deserialize(
-            const spline_vio::proto::PoseSpline& proto);
 
     void save (const std::string& file) const {
         spline_vio::proto::PoseSpline poseSpline_proto;
         serialize(&poseSpline_proto);
         std::string path, file_name;
         common::splitPathAndFilename(file, &path, &file_name);
+        std::cout << "knot: " << poseSpline_proto.knot_cnt() << std::endl;
+
         common::proto_serialization_helper::serializeProtoToFile(path, file_name, poseSpline_proto, true);
     }
     void load(const std::string& file ) {
@@ -46,7 +46,12 @@ public:
         deserialize(poseSpline_proto);
     }
 
-private:
+
     std::vector<std::pair<ros::Time, Pose<double>>> samples_;
+private:
+    void serialize(spline_vio::proto::PoseSpline* proto) const ;
+    void deserialize(
+            const spline_vio::proto::PoseSpline& proto);
+
 };
 #endif

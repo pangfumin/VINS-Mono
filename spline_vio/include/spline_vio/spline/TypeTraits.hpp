@@ -10,7 +10,7 @@ template <>
 class TypeTraits<JPL::Quaternion> {
 public:
     typedef JPL::Quaternion TypeT;
-    enum {Dim = 4, miniDim = 3};
+    enum: int{Dim = 4, miniDim = 3};
     static TypeT zero() {
         return JPL::unitQuat<double>();
     }

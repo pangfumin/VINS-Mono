@@ -6,12 +6,15 @@
 #include <glog/logging.h>
 #include "TypeTraits.hpp"
 #include <ros/time.h>
+#include "spline_vio/utility/eigen-proto.h"
+#include "spline_vio/spline.pb.h"
 
 using real_t = double;
 
 template <typename ElementType, int SplineOrder>
 class BSplineBase {
 public:
+    typedef  ElementType base_element_type;
     typedef Eigen::Matrix<double,TypeTraits<ElementType>::Dim,1> StateVector;
     BSplineBase(double interval):mSplineOrder(SplineOrder),
                                  mTimeInterval(interval) {};
@@ -205,6 +208,56 @@ public:
 
     std::vector<double> getKnots() {
         return knots_;
+    }
+
+    void serialize(spline_vio::proto::BaseSpline* proto) const  {
+        CHECK_NOTNULL(proto);
+
+        proto->set_spline_dt(mTimeInterval);
+        proto->set_spline_order(mSplineOrder);
+
+
+        proto->set_knot_cnt(knots_.size());
+        proto->set_control_point_cnt(mControlPointsParameter.size());
+        Eigen::VectorXd knots_eigen(knots_.size());
+        for (int i = 0; i < knots_.size(); i++) {
+            knots_eigen(i) = knots_.at(i);
+
+        }
+        common::eigen_proto::serialize(knots_eigen, proto->mutable_knot());
+
+        Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic >
+                cps_eigen(int(TypeTraits<ElementType>::Dim), mControlPointsParameter.size());
+        for (int i = 0; i < mControlPointsParameter.size(); i ++) {
+            cps_eigen.col(i) = mControlPointsParameter.at(i);
+        }
+        common::eigen_proto::serialize(cps_eigen, proto->mutable_control_point());
+
+    }
+
+    void deserialize(
+            const spline_vio::proto::BaseSpline& proto) {
+        mSplineOrder = proto.spline_order();
+        mTimeInterval = proto.spline_dt();
+        int64_t knots_cnt = proto.knot_cnt();
+        const int64_t cp_cnt = proto.control_point_cnt();
+        Eigen::VectorXd knots_eigen(knots_cnt);
+        common::eigen_proto::deserialize( proto.knot(), &knots_eigen);
+        knots_.clear();
+        mControlPointsParameter.clear();
+
+        for (int i = 0; i <knots_cnt ; i++ ) {
+            knots_.push_back(knots_eigen(i));
+        }
+
+        Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic > 
+                cps_eigen(int(TypeTraits<ElementType>::Dim), cp_cnt);
+        common::eigen_proto::deserialize( proto.control_point(), &cps_eigen);
+
+        for (int i = 0; i < cp_cnt; i++) {
+            mControlPointsParameter.push_back(cps_eigen.col(i));
+        }
+
     }
 
 

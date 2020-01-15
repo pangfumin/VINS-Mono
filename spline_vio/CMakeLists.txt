@@ -10,10 +10,15 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 find_package(catkin_simple REQUIRED)
 catkin_simple(ALL_DEPS_REQUIRED)
 
+set(PROTO_DEFNS proto/spline_vio/spline.proto)
+PROTOBUF_CATKIN_GENERATE_CPP2("proto" PROTO_SRCS PROTO_HDRS ${PROTO_DEFNS})
+
+
 #############
 # LIBRARIES #
 #############
-cs_add_library(${PROJECT_NAME}_lib
+
+SET(SPLINE_VIO_SOURCE
         src/camodocal/chessboard/Chessboard.cc
         src/camodocal/calib/CameraCalibration.cc
         src/camodocal/camera_models/Camera.cc
@@ -50,6 +55,8 @@ cs_add_library(${PROJECT_NAME}_lib
         src/spline/PoseSplineSampleError.cpp
         src/spline/QuaternionSplineUtility.cpp
         )
+
+cs_add_library(${PROJECT_NAME}_lib ${SPLINE_VIO_SOURCE} ${PROTO_SRCS})
 
 #######
 # APP #

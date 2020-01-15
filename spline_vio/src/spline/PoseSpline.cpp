@@ -11,8 +11,9 @@
             : BSplineBase(interval) {
 
     }
-    void PoseSpline::initialPoseSpline(std::vector<std::pair<ros::Time, Pose<double>>> Meas) {
+    void PoseSpline::initialPoseSpline(const std::vector<std::pair<ros::Time, Pose<double>>>& Meas) {
 
+        samples_ = Meas;
         // Build a  least-square problem
         ceres::Problem problem;
         PoseLocalParameter *poseLocalParameter = new PoseLocalParameter;
@@ -171,5 +172,43 @@
         //std::cout<<"dot_Q: "<<dot_Q_LG.transpose()<<std::endl;
         return QSUtility::w_in_body_frame<double>(Q_WI,dot_Q_WI);
     }
+void PoseSpline::serialize(spline_vio::proto::PoseSpline* proto) const {
+    base_t::serialize(const_cast<spline_vio::proto::BaseSpline* const>(&proto->base_spline()));
+
+    proto->set_sample_cnt(samples_.size());
+    Eigen::VectorXd samples_ts_eigtn(samples_.size());
+    Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic>
+            samples_value_eigtn(int (TypeTraits<ElementType>::Dim), samples_.size());
+    for (int i = 0; i < samples_.size(); i++) {
+        samples_ts_eigtn(i) = samples_.at(i).first.toSec();
+        samples_value_eigtn.col(i) = samples_.at(i).second.parameters();
+    }
+
+    common::eigen_proto::serialize(samples_ts_eigtn, proto->mutable_sample_ts());
+    common::eigen_proto::serialize(samples_value_eigtn, proto->mutable_sample_value());
+
+}
+void PoseSpline::deserialize(
+        const spline_vio::proto::PoseSpline& proto) {
+    base_t::deserialize(proto.base_spline());
+    int sample_cnt = proto.sample_cnt();
+    Eigen::VectorXd samples_ts_eigtn(sample_cnt);
+    Eigen::Matrix<double, TypeTraits<ElementType>::Dim, Eigen::Dynamic>
+            samples_value_eigtn(int (TypeTraits<ElementType>::Dim), sample_cnt);
+
+    common::eigen_proto::deserialize( proto.sample_ts(), &samples_ts_eigtn);
+    common::eigen_proto::deserialize( proto.sample_value(), &samples_value_eigtn);
+
+    samples_.clear();
+    for (int i = 0; i < sample_cnt; i++) {
+        Eigen::VectorXd pose_param(7);
+        pose_param = samples_value_eigtn.col(i);
+        Pose<double> pose(pose_param.head<3>(), pose_param.tail(4));
+
+        double ts = samples_ts_eigtn(i);
+        samples_.push_back(std::make_pair(ros::Time(ts), pose));
+    }
+
+}
 
 

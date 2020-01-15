@@ -18,4 +18,5 @@
   <depend>ceres_catkin</depend>
   <depend>rosbag</depend>
   <depend>tf</depend>
+  <depend>protobuf_catkin</depend>
 </package>

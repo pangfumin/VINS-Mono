@@ -265,8 +265,16 @@ public:
     void initialNewControlPoint(){
         typename TypeTraits<ElementType>::TypeT zero_ele = TypeTraits<ElementType>::zero();
         Eigen::Map<StateVector> data(zero_ele.data());
-
+//        std::cout << "cp : " << data.transpose() << std::endl;
         mControlPointsParameter.push_back(data);
+    }
+
+    void resetControlPoints() {
+        typename TypeTraits<ElementType>::TypeT zero_ele = TypeTraits<ElementType>::zero();
+        Eigen::Map<StateVector> data(zero_ele.data());
+        for (int i = 0; i < mControlPointsParameter.size(); i++) {
+            mControlPointsParameter[i] = data;
+        }
     }
 
     /// The knot sequence used by the B-spline.

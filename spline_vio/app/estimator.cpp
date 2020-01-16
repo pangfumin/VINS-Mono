@@ -925,6 +925,7 @@ void Estimator::optimization()
     pose_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
     bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
 
+    pose_spline_->resetControlPoints();
     pose_spline_->initialPoseSpline(meas_vec);
     bias_spline_->initialSpline(bias_meas_vec);
 
@@ -985,10 +986,28 @@ void Estimator::optimization()
 
             std::string file = "/home/pang/spline.txt";
             pose_spline_->save(file);
-            pose_spline_->load(file);
+//            pose_spline_->load(file);
+
+            // re initialize
+//            pose_spline_->initialPoseSpline();
+
+//            for (int i  = 0; i < pose_spline_->samples_.size(); i++) {
+//                Pose<double> eva_pose = pose_spline_->evalPoseSpline(pose_spline_->samples_.at(i).first.toSec());
+//                auto true_pose = pose_spline_->samples_.at(i).second;
+//                std::cout << "---------------- " << i << " ----------------" << std::endl;
+//                std::cout << "true_pose : " << true_pose.parameters().transpose() << std::endl;
+//                std::cout << "eva_pose  : " << eva_pose.parameters().transpose() << std::endl;
+//            }
+
             ROS_BREAK();
 
         }
+
+//        spline_v_j = pose_spline_->evalLinearVelocity(Headers[j].stamp.toSec());
+//        if ((JPL_T_j.parameters().head<3>() - spline_T_j.parameters().head<3>()).norm() > 0.3) {
+//                ROS_BREAK();
+//
+//        }
 
 
         const std::pair<double,uint> ui_i = pose_spline_->computeUAndTIndex(Headers[i].stamp.toSec());

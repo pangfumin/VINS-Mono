@@ -28,6 +28,7 @@ void PoseSpline::initialPoseSpline()  {
         //std::cout<<"-----------------------------------"<<std::endl;
         // add sample
         //addElemenTypeSample(i.first, i.second);
+        addControlPointsUntil(i.first.toSec());
 
         // Returns the normalized u value and the lower-bound time index.
         std::pair<double, unsigned int> ui = computeUAndTIndex(i.first.toSec());
@@ -65,7 +66,7 @@ void PoseSpline::initialPoseSpline()  {
     options.parameter_tolerance = 1e-4;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.BriefReport() << std::endl;
+    std::cout << summary.FullReport() << std::endl;
 
 }
 

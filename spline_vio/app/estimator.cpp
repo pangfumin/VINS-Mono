@@ -926,6 +926,7 @@ void Estimator::optimization()
     bias_spline_->removeControlPointsUntil(Headers[0].stamp.toSec());
 
     pose_spline_->resetControlPoints();
+    bias_spline_->resetControlPoints();
     pose_spline_->initialPoseSpline(meas_vec);
     bias_spline_->initialSpline(bias_meas_vec);
 
@@ -964,6 +965,7 @@ void Estimator::optimization()
         Eigen::Vector3d spline_v_i = pose_spline_->evalLinearVelocity(Headers[i].stamp.toSec());
         Eigen::Vector3d spline_v_j = pose_spline_->evalLinearVelocity(Headers[j].stamp.toSec());
         Eigen::Matrix<double,15,1> JPL_residuals, hamilton_residuals;
+        Eigen::VectorXd spline_residual(15);
 
 
 
@@ -977,15 +979,171 @@ void Estimator::optimization()
 
 
 
-        std::cout << "JPL_T_i: " << JPL_T_i.parameters().transpose() << std::endl;
-        std::cout << "spl_T_i: " << spline_T_i.parameters().transpose() << " " << Vs[i].transpose() << std::endl;
-        std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose() << std::endl;
-        std::cout << "spl_T_j: " << spline_T_j.parameters().transpose() << " " << Vs[j].transpose()<< std::endl;
+        std::cout << "JPL_T_i: " << JPL_T_i.parameters().transpose() << " " << Vs[i].transpose() << std::endl;
+        std::cout << "spl_T_i: " << spline_T_i.parameters().transpose() << " " << spline_v_i.transpose() << std::endl;
+        std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose() << " " <<  Vs[j].transpose() << std::endl;
+        std::cout << "spl_T_j: " << spline_T_j.parameters().transpose() << " " << spline_v_j.transpose() << std::endl;
 
-        if ((JPL_T_j.parameters().head<3>() - spline_T_j.parameters().head<3>()).norm() > 0.3) {
 
-            std::string file = "/home/pang/spline.txt";
-            pose_spline_->save(file);
+//        spline_v_j = pose_spline_->evalLinearVelocity(Headers[j].stamp.toSec());
+//        if ((JPL_T_j.parameters().head<3>() - spline_T_j.parameters().head<3>()).norm() > 0.3) {
+//                ROS_BREAK();
+//
+//        }
+
+
+        const std::pair<double,uint> ui_i = pose_spline_->computeUAndTIndex(Headers[i].stamp.toSec());
+        const std::pair<double,uint> ui_j = pose_spline_->computeUAndTIndex(Headers[j].stamp.toSec());
+
+        if(ui_i.second == ui_j.second) {
+
+            std::cout << "ui_i.second: " << 0 << std::endl;
+            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
+
+            DynamicSplineIMUFactor<4>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<4>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[8] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
+                                            bias_cp0, bias_cp1, bias_cp2, bias_cp3};
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+
+        } else if (ui_j.second - ui_i.second == 1) {
+            std::cout << "ui_i.second: " << 1 << std::endl;
+            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
+            double *pose_cp4 = pose_spline_->getControlPoint(bidx + 4);
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
+            double *bias_cp4 = bias_spline_->getControlPoint(bidx + 4);
+
+            DynamicSplineIMUFactor<5>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<5>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[10] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4,
+                                            bias_cp0, bias_cp1, bias_cp2, bias_cp3, bias_cp4};
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+        } else if (ui_j.second - ui_i.second == 2) {
+            std::cout << "ui_i.second: " << 2 << std::endl;
+            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
+            double *pose_cp4 = pose_spline_->getControlPoint(bidx + 4);
+            double *pose_cp5 = pose_spline_->getControlPoint(bidx + 5);
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
+            double *bias_cp4 = bias_spline_->getControlPoint(bidx + 4);
+            double *bias_cp5 = bias_spline_->getControlPoint(bidx + 5);
+
+            DynamicSplineIMUFactor<6>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<6>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[12] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4, pose_cp5,
+                                             bias_cp0, bias_cp1, bias_cp2, bias_cp3, bias_cp4, bias_cp5};
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+        } else if (ui_j.second - ui_i.second == 3) {
+            std::cout << "ui_i.second: " << 3 << std::endl;
+            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
+            double *pose_cp4 = pose_spline_->getControlPoint(bidx + 4);
+            double *pose_cp5 = pose_spline_->getControlPoint(bidx + 5);
+            double *pose_cp6 = pose_spline_->getControlPoint(bidx + 6);
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
+            double *bias_cp4 = bias_spline_->getControlPoint(bidx + 4);
+            double *bias_cp5 = bias_spline_->getControlPoint(bidx + 5);
+            double *bias_cp6 = bias_spline_->getControlPoint(bidx + 6);
+
+            DynamicSplineIMUFactor<7>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<7>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[14] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4, pose_cp5, pose_cp6,
+                                             bias_cp0, bias_cp1, bias_cp2, bias_cp3, bias_cp4, bias_cp5, bias_cp6};
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+        } else {
+            std::cout << "ui_i.second: " << ">= 4" << std::endl;
+
+            int bidx_i = ui_i.second - pose_spline_->spline_order() + 1;
+            int bidx_j = ui_j.second - pose_spline_->spline_order() + 1;
+            double *pose_cp0 = pose_spline_->getControlPoint(bidx_i);
+            double *pose_cp1 = pose_spline_->getControlPoint(bidx_i + 1);
+            double *pose_cp2 = pose_spline_->getControlPoint(bidx_i + 2);
+            double *pose_cp3 = pose_spline_->getControlPoint(bidx_i + 3);
+
+            double *pose_cp4 = pose_spline_->getControlPoint(bidx_j);
+            double *pose_cp5 = pose_spline_->getControlPoint(bidx_j + 1);
+            double *pose_cp6 = pose_spline_->getControlPoint(bidx_j + 2);
+            double *pose_cp7 = pose_spline_->getControlPoint(bidx_j + 3);
+
+            double *bias_cp0 = bias_spline_->getControlPoint(bidx_i);
+            double *bias_cp1 = bias_spline_->getControlPoint(bidx_i + 1);
+            double *bias_cp2 = bias_spline_->getControlPoint(bidx_i + 2);
+            double *bias_cp3 = bias_spline_->getControlPoint(bidx_i + 3);
+
+            double *bias_cp4 = bias_spline_->getControlPoint(bidx_j);
+            double *bias_cp5 = bias_spline_->getControlPoint(bidx_j + 1);
+            double *bias_cp6 = bias_spline_->getControlPoint(bidx_j + 2);
+            double *bias_cp7 = bias_spline_->getControlPoint(bidx_j + 3);
+
+            DynamicSplineIMUFactor<8>* dynamicSplineImuFactor =
+                    new DynamicSplineIMUFactor<8>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
+
+            double* spline_parameters[16] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4, pose_cp5, pose_cp6, pose_cp7,
+                                             bias_cp0, bias_cp1, bias_cp2, bias_cp3, bias_cp4, bias_cp5, bias_cp6, bias_cp7};
+            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
+
+            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+
+        }
+
+        if ((JPL_residuals - hamilton_residuals).norm() > 10 ) {
+
+
+//            std::string file = "/home/pang/spline.txt";
+//            pose_spline_->save(file);
 //            pose_spline_->load(file);
 
             // re initialize
@@ -1002,56 +1160,6 @@ void Estimator::optimization()
             ROS_BREAK();
 
         }
-
-//        spline_v_j = pose_spline_->evalLinearVelocity(Headers[j].stamp.toSec());
-//        if ((JPL_T_j.parameters().head<3>() - spline_T_j.parameters().head<3>()).norm() > 0.3) {
-//                ROS_BREAK();
-//
-//        }
-
-
-        const std::pair<double,uint> ui_i = pose_spline_->computeUAndTIndex(Headers[i].stamp.toSec());
-        const std::pair<double,uint> ui_j = pose_spline_->computeUAndTIndex(Headers[j].stamp.toSec());
-
-        if(ui_i.second == ui_j.second) {
-            int bidx = ui_i.second - pose_spline_->spline_order() + 1;
-//            std::cout << "ui_i.second: " << 0 << std::endl;
-//            double *pose_cp0 = pose_spline_->getControlPoint(bidx);
-//            double *pose_cp1 = pose_spline_->getControlPoint(bidx + 1);
-//            double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
-//            double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
-//            double *bias_cp0 = bias_spline_->getControlPoint(bidx);
-//            double *bias_cp1 = bias_spline_->getControlPoint(bidx + 1);
-//            double *bias_cp2 = bias_spline_->getControlPoint(bidx + 2);
-//            double *bias_cp3 = bias_spline_->getControlPoint(bidx + 3);
-//
-//            DynamicSplineIMUFactor<4>* dynamicSplineImuFactor =
-//                    new DynamicSplineIMUFactor<4>(JPL_pre_integrations[j], spline_dt, ui_i.first, ui_j.first);
-//
-//            double* spline_parameters[8] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
-//                                            bias_cp0, bias_cp1, bias_cp2, bias_cp3};
-//            Eigen::VectorXd spline_residual(15);
-//            dynamicSplineImuFactor->evaluate(spline_parameters, spline_residual.data(), NULL);
-//
-//            std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
-//            std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
-//            std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
-
-
-        } else if (ui_j.second - ui_i.second == 1) {
-            std::cout << "ui_i.second: " << 1 << std::endl;
-
-        } else if (ui_j.second - ui_i.second == 2) {
-            std::cout << "ui_i.second: " << 2 << std::endl;
-
-        } else if (ui_j.second - ui_i.second == 3) {
-            std::cout << "ui_i.second: " << 3 << std::endl;
-
-        } else {
-            std::cout << "ui_i.second: " << ">4" << std::endl;
-
-        }
-
 
 //        DynamicSplineIMUFactor* dynamicSplineImuFactor = new DynamicSplineIMUFactor(JPL_imu_factor, spline_dt);
 

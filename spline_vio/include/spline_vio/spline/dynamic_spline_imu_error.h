@@ -157,6 +157,7 @@ namespace  JPL {
 //            std::cout << "spl residual: " << error.transpose() << std::endl;
 
             Eigen::Matrix<T, 15, 15> sqrt_info = pre_integration_->sqrt_Sigma.cast<T>();
+//            std::cout << "spl sqrt_info: \n " << sqrt_info<< std::endl;
 //            sqrt_info.setIdentity();
 
             error = sqrt_info * error;
@@ -172,6 +173,7 @@ namespace  JPL {
         double spline_dt_;
         double t0_;
         double t1_;
+
     };
 }
 #endif

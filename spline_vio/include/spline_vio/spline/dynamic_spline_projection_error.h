@@ -10,6 +10,7 @@
 #include "spline_vio/spline/PoseLocalParameter.hpp"
 #include "spline_vio/spline/JPL_projection_error.h"
 #include "spline_vio/spline/QuaternionSplineUtility.hpp"
+#include "../parameters.h"
 namespace  JPL {
     template <int VertexNum>
     struct DynamicSplineProjectionFactor  {
@@ -22,6 +23,7 @@ namespace  JPL {
                 projection_base_(projection_base),
                         spline_dt_(spline_dt),
                         t0_(u0), t1_(u1){
+            sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
         }
 
 
@@ -132,8 +134,7 @@ namespace  JPL {
 
 //            std::cout << "spl residual: " << error.transpose() << std::endl;
 
-            Eigen::Matrix<T, 2, 2> sqrt_info ; //pre_integration_->sqrt_Sigma.cast<T>();
-            sqrt_info.setIdentity();
+
 
             error = sqrt_info * error;
 
@@ -148,6 +149,9 @@ namespace  JPL {
         double spline_dt_;
         double t0_;
         double t1_;
+        Eigen::Matrix2d sqrt_info;
+
+
     };
 }
 #endif

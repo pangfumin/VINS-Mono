@@ -10,6 +10,7 @@
 #include "spline_vio/spline/PoseLocalParameter.hpp"
 #include "spline_vio/spline/QuaternionLocalParameter.hpp"
 #include "spline_vio/parameters.h"
+#include "../parameters.h"
 
 namespace  JPL {
 
@@ -68,6 +69,8 @@ class ProjectionBase{
         JPLProjectionFactor() = delete;
 
         JPLProjectionFactor(ProjectionBase *_projection_base) : projection_base_(_projection_base) {
+            sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+
         }
 
         virtual bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const {
@@ -97,10 +100,13 @@ class ProjectionBase{
                                                inv_dep
                                                );
 
+            error = sqrt_info * error;
 
             return true;
         }
 
+
+        Eigen::Matrix2d sqrt_info;
 
         ProjectionBase *projection_base_;
 

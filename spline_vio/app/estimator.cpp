@@ -1,6 +1,8 @@
 #include "estimator.h"
 #include "spline_vio/spline/JPL_imu_error.h"
+#include "spline_vio/spline/JPL_projection_error.h"
 #include "spline_vio/spline/dynamic_spline_imu_error.h"
+#include "spline_vio/spline/dynamic_spline_projection_error.h"
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),

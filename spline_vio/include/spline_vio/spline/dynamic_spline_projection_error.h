@@ -116,8 +116,8 @@ namespace  JPL {
 
 
 
-//            std::cout << "eva_T_i: " << Pi.transpose() << " " <<  Qi.transpose() << " " <<  Vi.transpose() << std::endl;
-//            std::cout << "eva_T_j: " << Pj.transpose() << " " <<  Qj.transpose() << " " <<  Vj.transpose() << std::endl;
+            std::cout << "eva_T_i: " << Pi.transpose() << " " <<  Qi.transpose()  << std::endl;
+            std::cout << "eva_T_j: " << Pj.transpose() << " " <<  Qj.transpose()  << std::endl;
 
 //            std::cout << "spl Pi: " << Pi.transpose() << std::endl;
 //            std::cout << "spl Qi: " << Qi.transpose() << std::endl;

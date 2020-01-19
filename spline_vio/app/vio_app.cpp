@@ -53,7 +53,7 @@ int main(int argc, char **argv)
     ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Info);
 
     std::string rosbag_file = "/home/pang/disk/dataset/euroc/MH_01_easy.bag";
-    std::string config_file = "/home/pang/maplab_ws/src/SplineVIO/config/euroc/euroc_config.yaml";
+    std::string config_file = "/home/pang/maplab_ws/src/SplineVIO/config/euroc/euroc_config_no_extrinsic.yaml";
 
     readTopics(config_file);
     VinSystem vinSystem(config_file);

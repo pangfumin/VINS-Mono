@@ -54,6 +54,11 @@ SET(SPLINE_VIO_SOURCE
         src/spline/PoseSpline.cpp
         src/spline/PoseSplineSampleError.cpp
         src/spline/QuaternionSplineUtility.cpp
+        src/spline/spline_projection_error4.cpp
+        src/spline/spline_projection_error5.cpp
+        src/spline/spline_projection_error6.cpp
+        src/spline/spline_projection_error7.cpp
+        src/spline/spline_projection_error8.cpp
         )
 
 cs_add_library(${PROJECT_NAME}_lib ${SPLINE_VIO_SOURCE} ${PROTO_SRCS})

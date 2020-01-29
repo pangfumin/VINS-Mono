@@ -12,31 +12,37 @@
 #include "spline_vio/spline/QuaternionSplineUtility.hpp"
 #include "../parameters.h"
 namespace  JPL {
-    template <int VertexNum>
-    struct DynamicSplineProjectionFactor  {
-    public:
-        DynamicSplineProjectionFactor() = delete;
 
-        DynamicSplineProjectionFactor(std::shared_ptr<ProjectionBase> projection_base,
-                const double spline_dt,
+class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
+    public:
+    SplineProjectionFactor4() = delete;
+
+    SplineProjectionFactor4(std::shared_ptr<ProjectionBase> projection_base,
                 const double& u0, const double& u1) :
                 projection_base_(projection_base),
-                        spline_dt_(spline_dt),
                         t0_(u0), t1_(u1){
             sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
         }
 
 
         template <typename T>
-        bool operator()(T const* const* parameters,
+        bool operator()(T const*  parameters_0,
+                        T const*  parameters_1,
+                        T const*  parameters_2,
+                        T const*  parameters_3,
+                        T const*  parameters_4,
                         T* residual) const {
 
+            int VertexNum = 4;
             std::vector<Pose<T>> T_vec(VertexNum);
-            for (int i = 0; i < VertexNum; i++) {
-                T_vec[i] =  Pose<T>(parameters[i]);
-            }
 
-            T inv_depth = parameters[VertexNum][0];
+            T_vec[0] =  Pose<T>(parameters_0);
+            T_vec[1] =  Pose<T>(parameters_1);
+            T_vec[2] =  Pose<T>(parameters_2);
+            T_vec[3] =  Pose<T>(parameters_3);
+
+
+            T inv_depth = T(parameters_4[0]);
 
 
             const int SKIP = VertexNum - 4;
@@ -56,7 +62,6 @@ namespace  JPL {
 
             T ts0 = T(t0_);
             T ts1 = T(t1_);
-            T spline_dt = T(spline_dt_);
             T  Beta01 = QSUtility::beta1(ts0);
             T  Beta02 = QSUtility::beta2((ts0));
             T  Beta03 = QSUtility::beta3((ts0));
@@ -115,15 +120,11 @@ namespace  JPL {
             if (Qj[3] < T(0)) Qj = -Qj;
 
 
+//
+//            std::cout << "eva_T_i: " << Pi.transpose() << " " <<  Qi.transpose()  << std::endl;
+//            std::cout << "eva_T_j: " << Pj.transpose() << " " <<  Qj.transpose()  << std::endl;
 
-            std::cout << "eva_T_i: " << Pi.transpose() << " " <<  Qi.transpose()  << std::endl;
-            std::cout << "eva_T_j: " << Pj.transpose() << " " <<  Qj.transpose()  << std::endl;
 
-//            std::cout << "spl Pi: " << Pi.transpose() << std::endl;
-//            std::cout << "spl Qi: " << Qi.transpose() << std::endl;
-
-//            std::cout << "spl Pj: " << Pj.transpose() << std::endl;
-//            std::cout << "spl Qj: " << Qj.transpose() << std::endl;
 
             // compute error
             Eigen::Map<Eigen::Matrix<T, 2, 1>> error(residual);
@@ -132,21 +133,33 @@ namespace  JPL {
                                                  inv_depth,
                                                  NULL);
 
-//            std::cout << "spl residual: " << error.transpose() << std::endl;
-
-
-
             error = sqrt_info * error;
 
 
         }
 
-        bool evaluate(double const *const *parameters, double *residuals, double **jacobians) const {
-            return (*this)(parameters,residuals);
+        bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const {
+            if (jacobians == nullptr) {
+                return ceres::internal::VariadicEvaluate<
+                        SplineProjectionFactor4, double, 7, 7, 7, 7, 1,0,0,0,0,0>
+                ::Call(*this, parameters, residuals);
+            }
+
+
+            bool success =  ceres::internal::AutoDiff<SplineProjectionFactor4, double,
+                    7,7,7,7,1>::Differentiate(
+                    *this,
+                    parameters,
+                    2,
+                    residuals,
+                    jacobians);
+
+            return success;
+
+
         }
 
         std::shared_ptr<ProjectionBase> projection_base_;
-        double spline_dt_;
         double t0_;
         double t1_;
         Eigen::Matrix2d sqrt_info;

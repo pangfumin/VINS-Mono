@@ -31,7 +31,7 @@ class ProjectionBase{
         Eigen::Matrix<T, 2, 1>
         evaluate(const Eigen::Matrix<T,3,1> &Pi, const QuaternionTemplate<T> &Qi,
                  const Eigen::Matrix<T,3,1> &Pj, const QuaternionTemplate<T> &Qj,
-                 const double& rho,
+                 const T& rho,
                  T **jacobians = NULL) {
 
             auto t_WI0_hat = Pi;

@@ -3,6 +3,7 @@
 #include "spline_vio/spline/JPL_projection_error.h"
 #include "spline_vio/spline/dynamic_spline_imu_error.h"
 #include "spline_vio/spline/dynamic_spline_projection_error.h"
+//#include "spline_vio/spline/spline_projection_error4.h"
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),
@@ -1234,7 +1235,7 @@ void Estimator::optimization()
                 Pose<double> spline_T_i = pose_spline_->evalPoseSpline(Headers[imu_i].stamp.toSec());
                 Pose<double> spline_T_j = pose_spline_->evalPoseSpline(Headers[imu_j].stamp.toSec());
 
-                double* JPL_parameters[4] = {JPL_T_i.data(),  JPL_T_j.data(), para_Feature[feature_index]};
+                double* JPL_parameters[4] = {spline_T_i.data(),  spline_T_j.data(), para_Feature[feature_index]};
                 double* hamilton_parameters[4] = {para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index]};
 
                 Eigen::Map<Eigen::Matrix<double,7,1>> para_Ex_Pose_map(para_Ex_Pose[0]);
@@ -1265,8 +1266,8 @@ void Estimator::optimization()
                     double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
                     double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
 
-                    DynamicSplineProjectionFactor<4>* dynamic_factor =
-                            new DynamicSplineProjectionFactor<4>(projection_base, spline_dt, ui_i.first, ui_j.first);
+                    SplineProjectionFactor4* dynamic_factor =
+                            new SplineProjectionFactor4(projection_base,  ui_i.first, ui_j.first);
 
                     double* spline_parameters[5] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
                                                     para_Feature[feature_index]};
@@ -1275,13 +1276,21 @@ void Estimator::optimization()
                     std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose()  << std::endl;
                     std::cout << "spl_T_j: " << spline_T_j.parameters().transpose()  << std::endl;
 //
-                    dynamic_factor->evaluate(spline_parameters, spline_residual.data(), NULL);
+                    dynamic_factor->Evaluate(spline_parameters, spline_residual.data(), NULL);
+//
+//                    SplineProjectFunctor4 splineProjectFunctor4(0, pts_i,0,  pts_j, T_IC);
+//                    SplineProjectError4 splineProjectError4(splineProjectFunctor4);
+//                    Eigen::Vector2d spline_residual1;
+//                    double delta_t = 0;
+//                    double* spline1_parameters[6] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
+//                                                    para_Feature[feature_index], &delta_t};
+//                    splineProjectError4.Evaluate(spline1_parameters, spline_residual1.data(), NULL);
+//
 
-
-
-                    std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
-                    std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
-                    std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+                    std::cout << "JPL_residuals : " << JPL_residuals.transpose() << std::endl;
+                    std::cout << "ham_residuals : " << hamilton_residuals.transpose() << std::endl;
+                    std::cout << "spl0_residuals: " << spline_residual.transpose() << std::endl;
+//                    std::cout << "spl1_residuals: " << spline_residual1.transpose() << std::endl;
 
 
                 } else if(ui_j.second - ui_i.second  == 1) {
@@ -1294,23 +1303,23 @@ void Estimator::optimization()
                     double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
                     double *pose_cp4 = pose_spline_->getControlPoint(bidx + 4);
 
-                    DynamicSplineProjectionFactor<5>* dynamic_factor =
-                            new DynamicSplineProjectionFactor<5>(projection_base, spline_dt, ui_i.first, ui_j.first);
-
-                    double* spline_parameters[7] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4,
-                                                    para_Feature[feature_index]};
-                    std::cout << "JPL_T_i: " << JPL_T_i.parameters().transpose()  << std::endl;
-                    std::cout << "spl_T_i: " << spline_T_i.parameters().transpose()  << std::endl;
-                    std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose()  << std::endl;
-                    std::cout << "spl_T_j: " << spline_T_j.parameters().transpose()  << std::endl;
+//                    DynamicSplineProjectionFactor<5>* dynamic_factor =
+//                            new DynamicSplineProjectionFactor<5>(projection_base, spline_dt, ui_i.first, ui_j.first);
 //
-                    dynamic_factor->evaluate(spline_parameters, spline_residual.data(), NULL);
-
-
-
-                    std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
-                    std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
-                    std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
+//                    double* spline_parameters[7] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3, pose_cp4,
+//                                                    para_Feature[feature_index]};
+//                    std::cout << "JPL_T_i: " << JPL_T_i.parameters().transpose()  << std::endl;
+//                    std::cout << "spl_T_i: " << spline_T_i.parameters().transpose()  << std::endl;
+//                    std::cout << "JPL_T_j: " << JPL_T_j.parameters().transpose()  << std::endl;
+//                    std::cout << "spl_T_j: " << spline_T_j.parameters().transpose()  << std::endl;
+////
+//                    dynamic_factor->evaluate(spline_parameters, spline_residual.data(), NULL);
+//
+//
+//
+//                    std::cout << "JPL_residuals: " << JPL_residuals.transpose() << std::endl;
+//                    std::cout << "ham_residuals: " << hamilton_residuals.transpose() << std::endl;
+//                    std::cout << "spl_residuals: " << spline_residual.transpose() << std::endl;
 
 
                 }

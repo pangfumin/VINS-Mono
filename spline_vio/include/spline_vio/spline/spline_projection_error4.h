@@ -8,6 +8,7 @@
 #include <Eigen/Geometry>
 #include "spline_vio/spline/Pose.hpp"
 #include "spline_vio/spline/PoseSplineUtility.hpp"
+#include "spline_vio/parameters.h"
 
 struct SplineProjectFunctor4{
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -15,7 +16,9 @@ struct SplineProjectFunctor4{
                        const double _t1, const Eigen::Vector3d& uv_C1,
                        const Eigen::Isometry3d _T_IC) :
                        t0_(_t0), C0uv_(uv_C0), t1_(_t1), C1uv_(uv_C1),
-                       T_IC_(_T_IC) {}
+                       T_IC_(_T_IC) {
+        sqrt_info = FOCAL_LENGTH / 1.5 * Eigen::Matrix2d::Identity();
+    }
     template <typename  T>
     bool operator()(const T* const T0_param, const T* const T1_param,
                     const T* const T2_param, const T* const T3_param,
@@ -99,7 +102,7 @@ struct SplineProjectFunctor4{
 
         // weight it
         Eigen::Map<Eigen::Matrix<T, 2, 1> > weighted_error(residuals);
-        weighted_error =  error;
+        weighted_error =  sqrt_info.cast<T>() * error;
 //
 
         return true;
@@ -109,6 +112,7 @@ struct SplineProjectFunctor4{
     Eigen::Vector3d C0uv_;
     Eigen::Vector3d C1uv_;
     Eigen::Isometry3d T_IC_;
+    Eigen::Matrix2d sqrt_info;
 };
 
 class SplineProjectError4 : public ceres::SizedCostFunction<2,7,7,7,7,1,1>{

@@ -1,8 +1,11 @@
 #include "spline_vio/spline/spline_projection_error4.h"
 #include "spline_vio/spline/QuaternionSplineUtility.hpp"
 #include "spline_vio/spline/PoseLocalParameter.hpp"
+#include "spline_vio/parameters.h"
 SplineProjectError4::SplineProjectError4(const SplineProjectFunctor4& functor):
-functor_(functor){}
+functor_(functor){
+
+}
 
 
 bool SplineProjectError4::Evaluate(double const *const *parameters,

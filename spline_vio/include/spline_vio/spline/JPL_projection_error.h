@@ -69,7 +69,7 @@ class ProjectionBase{
         JPLProjectionFactor() = delete;
 
         JPLProjectionFactor(ProjectionBase *_projection_base) : projection_base_(_projection_base) {
-            sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+            sqrt_info = FOCAL_LENGTH / 1.5 * Eigen::Matrix2d::Identity();
 
         }
 

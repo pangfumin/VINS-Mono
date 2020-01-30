@@ -4,6 +4,7 @@
 #include "spline_vio/spline/dynamic_spline_imu_error.h"
 #include "spline_vio/spline/dynamic_spline_projection_error.h"
 //#include "spline_vio/spline/spline_projection_error4.h"
+#include <ceres/gradient_checker.h>
 
 Estimator::Estimator(): f_manager{Rs},
                         last_marginalization_info(NULL),
@@ -1266,7 +1267,7 @@ void Estimator::optimization()
                     double *pose_cp2 = pose_spline_->getControlPoint(bidx + 2);
                     double *pose_cp3 = pose_spline_->getControlPoint(bidx + 3);
 
-                    SplineProjectionFactor4* dynamic_factor =
+                    ceres::CostFunction* dynamic_factor =
                             new SplineProjectionFactor4(projection_base,  ui_i.first, ui_j.first);
 
                     double* spline_parameters[5] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
@@ -1277,20 +1278,27 @@ void Estimator::optimization()
                     std::cout << "spl_T_j: " << spline_T_j.parameters().transpose()  << std::endl;
 //
                     dynamic_factor->Evaluate(spline_parameters, spline_residual.data(), NULL);
-//
-//                    SplineProjectFunctor4 splineProjectFunctor4(0, pts_i,0,  pts_j, T_IC);
-//                    SplineProjectError4 splineProjectError4(splineProjectFunctor4);
-//                    Eigen::Vector2d spline_residual1;
-//                    double delta_t = 0;
-//                    double* spline1_parameters[6] = {pose_cp0, pose_cp1, pose_cp2, pose_cp3,
-//                                                    para_Feature[feature_index], &delta_t};
-//                    splineProjectError4.Evaluate(spline1_parameters, spline_residual1.data(), NULL);
-//
+
 
                     std::cout << "JPL_residuals : " << JPL_residuals.transpose() << std::endl;
                     std::cout << "ham_residuals : " << hamilton_residuals.transpose() << std::endl;
                     std::cout << "spl0_residuals: " << spline_residual.transpose() << std::endl;
 //                    std::cout << "spl1_residuals: " << spline_residual1.transpose() << std::endl;
+
+                    std::vector<const ceres::LocalParameterization* > local_parameters;
+                    local_parameters.push_back(new JPL::PoseLocalParameter);
+                    local_parameters.push_back(new JPL::PoseLocalParameter);
+                    local_parameters.push_back(new JPL::PoseLocalParameter);
+                    local_parameters.push_back(new JPL::PoseLocalParameter);
+                    local_parameters.push_back(new ceres::IdentityParameterization(1));
+
+                    ceres::NumericDiffOptions options;
+                    ceres::GradientChecker gradientChecker(dynamic_factor, &local_parameters, options);
+
+                    ceres::GradientChecker::ProbeResults probeResults;
+                    if (! gradientChecker.Probe(spline_parameters, 1e-6,&probeResults)) {
+                        std::cerr << "gredinat check fail: " << probeResults.error_log << std::endl;
+                    }
 
 
                 } else if(ui_j.second - ui_i.second  == 1) {

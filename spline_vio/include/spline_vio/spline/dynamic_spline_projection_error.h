@@ -13,7 +13,7 @@
 #include "../parameters.h"
 namespace  JPL {
 
-class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
+class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1,1> {
     public:
     SplineProjectionFactor4() = delete;
 
@@ -21,7 +21,7 @@ class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
                 const double& u0, const double& u1) :
                 projection_base_(projection_base),
                         t0_(u0), t1_(u1){
-            sqrt_info = FOCAL_LENGTH / 1.5 * Matrix2d::Identity();
+            sqrt_info = FOCAL_LENGTH / 1.5 * Eigen::Matrix2d::Identity();
         }
 
 
@@ -30,7 +30,8 @@ class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
                         T const*  parameters_1,
                         T const*  parameters_2,
                         T const*  parameters_3,
-                        T const*  parameters_4,
+                        T const*  param_inv_depth,
+                        T const*  param_delta_t,
                         T* residual) const {
 
             int VertexNum = 4;
@@ -42,7 +43,7 @@ class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
             T_vec[3] =  Pose<T>(parameters_3);
 
 
-            T inv_depth = T(parameters_4[0]);
+            T inv_depth = T(param_inv_depth[0]);
 
 
             const int SKIP = VertexNum - 4;
@@ -60,8 +61,8 @@ class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
 
 
 
-            T ts0 = T(t0_);
-            T ts1 = T(t1_);
+            T ts0 = T(t0_ + param_delta_t[0]);
+            T ts1 = T(t1_ + param_delta_t[0]);
             T  Beta01 = QSUtility::beta1(ts0);
             T  Beta02 = QSUtility::beta2((ts0));
             T  Beta03 = QSUtility::beta3((ts0));
@@ -141,20 +142,20 @@ class SplineProjectionFactor4: public ceres::SizedCostFunction<2,7,7,7,7,1> {
         bool Evaluate(double const *const *parameters, double *residuals, double **jacobians) const {
             if (jacobians == nullptr) {
                 return ceres::internal::VariadicEvaluate<
-                        SplineProjectionFactor4, double, 7, 7, 7, 7, 1,0,0,0,0,0>
+                        SplineProjectionFactor4, double, 7, 7, 7, 7, 1,1,0,0,0,0>
                 ::Call(*this, parameters, residuals);
             }
 
 
             bool success =  ceres::internal::AutoDiff<SplineProjectionFactor4, double,
-                    7,7,7,7,1>::Differentiate(
+                    7,7,7,7,1,1>::Differentiate(
                     *this,
                     parameters,
                     2,
                     residuals,
                     jacobians);
 
-            return success;
+            return true;
 
 
         }

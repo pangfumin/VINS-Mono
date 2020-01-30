@@ -80,6 +80,9 @@ target_link_libraries(data2bag ${PROJECT_NAME}_lib)
 cs_add_executable(generate_mask tools/generate_mask.cpp)
 target_link_libraries(generate_mask ${PROJECT_NAME}_lib)
 
+cs_add_executable(testSplineProjectionError4 test/testSplineProjectionError4.cpp)
+target_link_libraries(testSplineProjectionError4 ${PROJECT_NAME}_lib)
+
 #cs_add_executable(test_spline_initialization test/test_spline_initialization.cpp)
 #target_link_libraries(test_spline_initialization ${PROJECT_NAME}_lib)
 #########

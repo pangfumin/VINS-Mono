@@ -59,6 +59,10 @@ SET(SPLINE_VIO_SOURCE
         src/spline/spline_projection_error6.cpp
         src/spline/spline_projection_error7.cpp
         src/spline/spline_projection_error8.cpp
+
+        src/ceres/gradient_checker.cc
+        src/ceres/is_close.cc
+        src/ceres/stringprintf.cc
         )
 
 cs_add_library(${PROJECT_NAME}_lib ${SPLINE_VIO_SOURCE} ${PROTO_SRCS})
@@ -80,7 +84,11 @@ target_link_libraries(data2bag ${PROJECT_NAME}_lib)
 cs_add_executable(generate_mask tools/generate_mask.cpp)
 target_link_libraries(generate_mask ${PROJECT_NAME}_lib)
 
-cs_add_executable(testSplineProjectionError4 test/testSplineProjectionError4.cpp)
+cs_add_executable(testSplineProjectionError4
+        src/ceres/gradient_checker.cc
+        src/ceres/is_close.cc
+        src/ceres/stringprintf.cc
+        test/testSplineProjectionError4.cpp)
 target_link_libraries(testSplineProjectionError4 ${PROJECT_NAME}_lib)
 
 #cs_add_executable(test_spline_initialization test/test_spline_initialization.cpp)
